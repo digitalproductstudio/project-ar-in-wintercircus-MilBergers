@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elephant Drawing 3D Experience</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cv.js/0.0.1/cv.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsartoolkit5/0.0.1/artoolkit.min.js"></script>
+</head>
+<body>
+    <div id="app">
+        <div id="intro-screen" class="screen active">
+            <h1>Elephant Drawing 3D Experience</h1>
+            <p>Color the elephant template, then scan it to see your drawing come to life as a 3D elephant!</p>
+            <div class="button-container">
+                <button id="start-btn" class="primary-btn">Start Experience</button>
+                <button id="template-btn" class="secondary-btn">Download Template</button>
+            </div>
+        </div>
+
+        <div id="camera-screen" class="screen">
+            <div class="camera-container">
+                <video id="camera-feed" autoplay playsinline></video>
+                <canvas id="camera-canvas"></canvas>
+                <div class="camera-overlay">
+                    <div class="corner-marker top-left"></div>
+                    <div class="corner-marker top-right"></div>
+                    <div class="corner-marker bottom-left"></div>
+                    <div class="corner-marker bottom-right"></div>
+                </div>
+            </div>
+            <div class="button-container">
+                <button id="capture-btn" class="primary-btn">Capture</button>
+                <button id="back-to-intro-btn" class="secondary-btn">Back</button>
+            </div>
+        </div>
+
+        <div id="processing-screen" class="screen">
+            <div class="loading-container">
+                <div class="loading-spinner"></div>
+                <p>Processing your elephant...</p>
+            </div>
+        </div>
+
+        <div id="result-screen" class="screen">
+            <div id="scene-container"></div>
+            <div class="controls-container">
+                <button id="rotate-left-btn" class="control-btn">↶</button>
+                <button id="rotate-right-btn" class="control-btn">↷</button>
+                <button id="zoom-in-btn" class="control-btn">+</button>
+                <button id="zoom-out-btn" class="control-btn">-</button>
+            </div>
+            <div class="button-container">
+                <button id="restart-btn" class="primary-btn">Scan Another</button>
+                <button id="save-btn" class="secondary-btn">Save Image</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
