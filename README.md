@@ -26,11 +26,11 @@ Deze applicatie combineert tekenen met moderne 3D/AR-technologie:
 
 | Technologie | Onderbouwing |
 |------------|---------------|
-| **Three.js** | Industriestandaard voor WebGL met uitstekende documentatie |
+| **Three.js** | Gebruik ik voor de 3D-weergave en AR |
 | **GLTFLoader** | Efficiënt formaat voor 3D-modellen, web-geoptimaliseerd |
-| **OrbitControls** | Intuïtieve gebruikersbesturing met minimale ontwikkelingsinspanning |
+| **OrbitControls** | Intuïtieve gebruikersbesturing |
 | **Canvas API** | Native browser-API voor efficiënte beeldverwerking |
-| **MediaDevices API** | Standaard web-API voor cameratoegang |
+| **MediaDevices API** | Voor toegang tot de camera (werkt op bijna alle browsers) |
 
 ## Installatie en Test
 
