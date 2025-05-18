@@ -1,4 +1,4 @@
-# Elephant Drawing 3D Experience
+# Tembo Drawing 3D Experience
 
 Een interactieve webapplicatie waarmee gebruikers een olifant tekening kunnen inkleuren, vastleggen met hun camera, en als 3D-model tot leven zien komen.
 
