@@ -18,7 +18,13 @@ const translations = {
         modelLoadError: "Model Loading Error",
         modelLoadErrorMsg: "Please check your model path and file format.",
         expectedPath: "Expected path: assets/models/elephant.gltf",
-        closeBtn: "Close"
+        closeBtn: "Close",
+        // New permission translations
+        permissionTitle: "Camera Access Required",
+        permissionText1: "To scan your drawing, we need access to your camera.",
+        permissionText2: "When prompted, please tap \"Allow\" to continue.",
+        grantPermissionBtn: "Grant Camera Access",
+        permissionDenied: "Camera access was denied. Please grant camera permission to use this feature."
     },
     nl: {
         title: "TEMBO TEKENING 3D ERVARING",
@@ -38,7 +44,13 @@ const translations = {
         modelLoadError: "Fout bij laden model",
         modelLoadErrorMsg: "Controleer je modelpad en bestandsformaat.",
         expectedPath: "Verwacht pad: assets/models/elephant.gltf",
-        closeBtn: "Sluiten"
+        closeBtn: "Sluiten",
+        // New permission translations
+        permissionTitle: "Camera Toegang Vereist",
+        permissionText1: "Om je tekening te scannen, hebben we toegang tot je camera nodig.",
+        permissionText2: "Wanneer gevraagd, tik op \"Toestaan\" om door te gaan.",
+        grantPermissionBtn: "Geef Camera Toegang",
+        permissionDenied: "Camera toegang is geweigerd. Geef alstublieft toestemming voor de camera om deze functie te gebruiken."
     }
 };
 
@@ -202,6 +214,7 @@ function loadSceneModel() {
 
 // DOM Elements
 const introScreen = document.getElementById('intro-screen');
+const permissionScreen = document.getElementById('permission-screen');
 const cameraScreen = document.getElementById('camera-screen');
 const processingScreen = document.getElementById('processing-screen');
 const resultScreen = document.getElementById('result-screen');
@@ -213,6 +226,8 @@ const backToIntroBtn = document.getElementById('back-to-intro-btn');
 const restartBtn = document.getElementById('restart-btn');
 const saveBtn = document.getElementById('save-btn');
 const switchCameraBtn = document.getElementById('switch-camera-btn');
+const grantPermissionBtn = document.getElementById('grant-permission-btn');
+const backFromPermissionBtn = document.getElementById('back-from-permission-btn');
 
 const cameraFeed = document.getElementById('camera-feed');
 const cameraCanvas = document.getElementById('camera-canvas');
@@ -355,6 +370,11 @@ function updateModelFromConfig() {
     }
 }
 
+// Helper function to detect if we're on a mobile device
+function isMobileDevice() {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
 // Function to enumerate available cameras
 async function getAvailableCameras() {
     try {
@@ -383,32 +403,42 @@ async function getAvailableCameras() {
 function updateSwitchCameraButtonVisibility() {
     if (switchCameraBtn) {
         // Only show switch camera button if multiple cameras are available
-        switchCameraBtn.style.display = availableCameras.length > 1 ? 'block' : 'none';
+        const hasMultipleCameras = availableCameras.length > 1;
+        console.log('Multiple cameras available:', hasMultipleCameras);
+        switchCameraBtn.style.display = hasMultipleCameras ? 'block' : 'none';
     }
 }
 
-// Add this new function to refresh the camera list after permissions are granted
+// Function to refresh the camera list after permissions are granted
 async function refreshCameraList() {
     try {
         // Re-enumerate devices now that we have permissions
         const devices = await navigator.mediaDevices.enumerateDevices();
         const newCameras = devices.filter(device => device.kind === 'videoinput');
         
-        // Log if there's any change in the camera list
-        if (newCameras.length !== availableCameras.length) {
-            console.log('Camera list updated after permission:', newCameras);
-            availableCameras = newCameras;
-        }
+        // Log camera information
+        console.log('Refreshed camera list:', newCameras);
         
-        // Update switch camera button visibility with the refreshed list
-        updateSwitchCameraButtonVisibility();
+        // If we have new camera information
+        if (newCameras.length > 0) {
+            // Update our camera list
+            availableCameras = newCameras;
+            
+            // Log if there are multiple cameras
+            if (availableCameras.length > 1) {
+                console.log('Multiple cameras detected:', availableCameras.length);
+            }
+            
+            // Update switch camera button visibility
+            updateSwitchCameraButtonVisibility();
+        }
     } catch (error) {
         console.error('Error refreshing camera list:', error);
     }
 }
 
 // Event Listeners
-startBtn.addEventListener('click', initializeCamera);
+startBtn.addEventListener('click', goToPermissionScreen);
 templateBtn.addEventListener('click', downloadTemplate);
 captureBtn.addEventListener('click', captureImage);
 backToIntroBtn.addEventListener('click', goToIntroScreen);
@@ -416,6 +446,12 @@ restartBtn.addEventListener('click', restart);
 saveBtn.addEventListener('click', saveImage);
 if (switchCameraBtn) {
     switchCameraBtn.addEventListener('click', switchCamera);
+}
+if (grantPermissionBtn) {
+    grantPermissionBtn.addEventListener('click', requestCameraPermission);
+}
+if (backFromPermissionBtn) {
+    backFromPermissionBtn.addEventListener('click', goToIntroScreen);
 }
 
 // Language button event listeners
@@ -442,18 +478,99 @@ function goToIntroScreen() {
     showScreen(introScreen);
 }
 
+function goToPermissionScreen() {
+    showScreen(permissionScreen);
+}
+
 function restart() {
     stopThreeJs();
     showScreen(introScreen);
+}
+
+// Function to request camera permission
+async function requestCameraPermission() {
+    try {
+        // First, check if we already have permissions
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const cameras = devices.filter(device => device.kind === 'videoinput');
+        
+        // If we have camera info with labels, we likely already have permission
+        const hasPermission = cameras.some(camera => camera.label && camera.label.length > 0);
+        
+        if (hasPermission) {
+            console.log('Camera permission already granted');
+            initializeCamera();
+            return;
+        }
+        
+        // Otherwise, request access to trigger the permission prompt
+        // Try with facingMode: 'environment' first to get the back camera on mobile
+        console.log('Requesting camera permission with environment facing mode...');
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: 'environment' }, 
+                audio: false 
+            });
+            
+            // Stop the stream immediately, we just needed to trigger the permission prompt
+            stream.getTracks().forEach(track => track.stop());
+            
+            console.log('Camera permission granted with environment facing mode');
+        } catch (error) {
+            // If environment mode fails, try with basic video constraints
+            console.log('Environment mode failed, trying basic permissions:', error);
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+            stream.getTracks().forEach(track => track.stop());
+            console.log('Camera permission granted with basic constraints');
+        }
+        
+        // Now initialize the camera with proper settings
+        initializeCamera();
+    } catch (error) {
+        console.error('Error requesting camera permission:', error);
+        
+        // Show error message
+        const errorMsg = document.createElement('div');
+        errorMsg.style.color = '#E73C3E';
+        errorMsg.style.marginBottom = '20px';
+        errorMsg.style.fontWeight = 'bold';
+        errorMsg.style.maxWidth = '80%';
+        errorMsg.style.textAlign = 'center';
+        errorMsg.innerHTML = translations[currentLanguage].permissionDenied;
+        
+        // Find or create an error container to avoid duplicate messages
+        let errorContainer = permissionScreen.querySelector('.error-container');
+        if (!errorContainer) {
+            errorContainer = document.createElement('div');
+            errorContainer.className = 'error-container';
+            
+            // Insert the error container before the button container
+            const buttonContainer = permissionScreen.querySelector('.button-container');
+            permissionScreen.insertBefore(errorContainer, buttonContainer);
+        } else {
+            // Clear any existing error messages
+            errorContainer.innerHTML = '';
+        }
+        
+        // Add the error message to the container
+        errorContainer.appendChild(errorMsg);
+        
+        // Remove the error message after 5 seconds
+        setTimeout(() => {
+            if (errorMsg.parentNode) {
+                errorMsg.parentNode.removeChild(errorMsg);
+            }
+        }, 5000);
+    }
 }
 
 // Camera Functions
 async function initializeCamera() {
     const hasCameras = await getAvailableCameras();
     if (hasCameras) {
-        // Use second camera (index 1) if available, otherwise use first camera (index 0)
-        const preferredIndex = availableCameras.length > 1 ? 1 : 0;
-        startCamera(preferredIndex);
+        // We'll use index 1 to trigger our facingMode: 'environment' logic
+        // This will attempt to use the back camera on mobile devices
+        startCamera(1);
     }
 }
 
@@ -461,29 +578,50 @@ async function startCamera(cameraIndex = 0) {
     // Stop any existing camera stream first
     stopCamera();
     
-    // Make sure we have a list of available cameras
-    if (availableCameras.length === 0) {
-        const hasCameras = await getAvailableCameras();
-        if (!hasCameras) return;
-    }
-    
-    // Set the current camera index
-    currentCameraIndex = cameraIndex % availableCameras.length;
-    
     try {
-        // Get the selected camera device ID
-        const selectedCamera = availableCameras[currentCameraIndex];
-        console.log('Starting camera:', selectedCamera.label || `Camera ${currentCameraIndex + 1}`);
+        let constraints;
         
-        // Get the stream with the specific device ID
-        cameraStream = await navigator.mediaDevices.getUserMedia({ 
-            video: { 
-                deviceId: { exact: selectedCamera.deviceId },
-                width: { ideal: 1280 },
-                height: { ideal: 720 }
-            }, 
-            audio: false 
-        });
+        // Try to use facingMode first if we have more than one camera or on mobile
+        if ((availableCameras.length > 1 || isMobileDevice()) && cameraIndex === 1) {
+            console.log('Attempting to use environment facing mode (back camera)');
+            constraints = { 
+                video: { 
+                    facingMode: 'environment',  // This specifically requests the back camera
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                }, 
+                audio: false 
+            };
+        } else if (availableCameras.length > 0) {
+            // Fall back to using deviceId if facingMode isn't supported or we're choosing a specific camera
+            const selectedCamera = availableCameras[cameraIndex % availableCameras.length];
+            console.log('Starting camera using deviceId:', selectedCamera.deviceId);
+            
+            constraints = { 
+                video: { 
+                    deviceId: { exact: selectedCamera.deviceId },
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                }, 
+                audio: false 
+            };
+            
+            // Store the current camera index
+            currentCameraIndex = cameraIndex % availableCameras.length;
+        } else {
+            // If no cameras were found in our enumeration, just try with basic constraints
+            console.log('No cameras in list, using basic constraints');
+            constraints = { 
+                video: {
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                }, 
+                audio: false 
+            };
+        }
+        
+        // Get the stream with the constraints
+        cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
         
         cameraFeed.srcObject = cameraStream;
         
@@ -516,7 +654,58 @@ async function startCamera(cameraIndex = 0) {
         };
     } catch (error) {
         console.error('Error accessing camera:', error);
-        alert(`Unable to access camera ${currentCameraIndex + 1}. Please ensure you have given camera permissions and try again.`);
+        
+        // If facingMode fails, try again with deviceId approach
+        if (error.name === 'OverconstrainedError' && 
+            error.constraint === 'facingMode' && 
+            availableCameras.length > 0) {
+            
+            console.log('Falling back to deviceId selection');
+            
+            // Try to select an appropriate camera from the list (not index 0 which is usually the front camera)
+            const backCameraIndex = availableCameras.length > 1 ? 1 : 0;
+            currentCameraIndex = backCameraIndex;
+            
+            try {
+                const selectedCamera = availableCameras[backCameraIndex];
+                console.log('Trying with camera:', selectedCamera.label || `Camera ${backCameraIndex + 1}`);
+                
+                cameraStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        deviceId: { exact: selectedCamera.deviceId },
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }, 
+                    audio: false 
+                });
+                
+                cameraFeed.srcObject = cameraStream;
+                
+                // Wait for the video to be ready
+                cameraFeed.onloadedmetadata = () => {
+                    // Set canvas dimensions to match video
+                    const containerAspect = 4/3;
+                    const videoAspect = cameraFeed.videoWidth / cameraFeed.videoHeight;
+                    
+                    if (videoAspect > containerAspect) {
+                        cameraCanvas.width = cameraFeed.videoHeight * containerAspect;
+                        cameraCanvas.height = cameraFeed.videoHeight;
+                    } else {
+                        cameraCanvas.width = cameraFeed.videoWidth;
+                        cameraCanvas.height = cameraFeed.videoWidth / containerAspect;
+                    }
+                    
+                    refreshCameraList();
+                    showScreen(cameraScreen);
+                };
+                
+                return;
+            } catch (fallbackError) {
+                console.error('Fallback camera access failed:', fallbackError);
+            }
+        }
+        
+        alert(`Unable to access camera. Please ensure you have given camera permissions and try again.`);
     }
 }
 

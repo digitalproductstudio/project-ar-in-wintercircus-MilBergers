@@ -32,6 +32,23 @@
             </div>
         </div>
 
+        <!-- New Permission Screen -->
+        <div id="permission-screen" class="screen">
+            <h2 data-i18n="permissionTitle">Camera Access Required</h2>
+            <div class="permission-icon">
+                <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 10C10.9 10 10 10.9 10 12C10 13.1 10.9 14 12 14C13.1 14 14 13.1 14 12C14 10.9 13.1 10 12 10Z" fill="#E73C3E"/>
+                    <path d="M20 4H17.8L16 2H8L6.2 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4ZM12 17C9.2 17 7 14.8 7 12C7 9.2 9.2 7 12 7C14.8 7 17 9.2 17 12C17 14.8 14.8 17 12 17Z" fill="#E73C3E"/>
+                </svg>
+            </div>
+            <p class="permission-text" data-i18n="permissionText1">To scan your drawing, we need access to your camera.</p>
+            <p class="permission-text" data-i18n="permissionText2">When prompted, please tap "Allow" to continue.</p>
+            <div class="button-container">
+                <button id="grant-permission-btn" class="primary-btn" data-i18n="grantPermissionBtn">Grant Camera Access</button>
+                <button id="back-from-permission-btn" class="secondary-btn" data-i18n="backBtn">Back</button>
+            </div>
+        </div>
+
         <div id="camera-screen" class="screen">
             <div class="camera-container">
                 <video id="camera-feed" autoplay playsinline></video>
