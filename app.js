@@ -1,7 +1,7 @@
 // Language translations
 const translations = {
     en: {
-        title: "Elephant Drawing 3D Experience",
+        title: "Tembo Drawing 3D Experience",
         description: "Color the elephant template, then scan it to see your drawing come to life as a 3D elephant!",
         startBtn: "Start Experience",
         templateBtn: "Download Template",
@@ -21,7 +21,7 @@ const translations = {
         closeBtn: "Close"
     },
     nl: {
-        title: "Olifant Tekening 3D Ervaring",
+        title: "Tembo Tekening 3D Ervaring",
         description: "Kleur de olifant sjabloon, scan het dan om je tekening tot leven te zien komen als een 3D olifant!",
         startBtn: "Start Ervaring",
         templateBtn: "Sjabloon Downloaden",
