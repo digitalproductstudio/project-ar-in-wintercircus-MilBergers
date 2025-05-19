@@ -256,29 +256,6 @@ button {
     cursor: grabbing; /* Changes cursor when actively dragging */
 }
 
-.controls-container {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-bottom: 20px;
-}
-
-.control-btn {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 1.5rem;
-    background-color: rgba(255, 255, 255, 0.8);
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-.control-btn:hover {
-    background-color: rgba(255, 255, 255, 1);
-}
-
 /* Collaboration logos container */
 .collaboration-logos {
     position: fixed;

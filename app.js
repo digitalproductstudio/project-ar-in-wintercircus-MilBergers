@@ -240,16 +240,6 @@ if (!GLTFLoader) {
     console.error('THREE.GLTFLoader not found. Make sure to include it in your HTML.');
 }
 
-// Remove rotation buttons from the DOM
-const rotateLeftBtn = document.getElementById('rotate-left-btn');
-const rotateRightBtn = document.getElementById('rotate-right-btn');
-if (rotateLeftBtn) rotateLeftBtn.remove();
-if (rotateRightBtn) rotateRightBtn.remove();
-
-// Only keep zoom buttons
-const zoomInBtn = document.getElementById('zoom-in-btn');
-const zoomOutBtn = document.getElementById('zoom-out-btn');
-
 // App State
 let cameraStream = null;
 let capturedImage = null;
@@ -262,6 +252,7 @@ let elephantTexture = null;
 let modelLoaded = false; // Flag to track model loading
 let availableCameras = [];
 let currentCameraIndex = 0;
+let isUsingBackCamera = true; // Flag to track which camera type is active
 
 // Elephant model configuration - you can adjust these as needed
 const modelConfig = {
@@ -308,14 +299,6 @@ function addModelControls() {
     
     controlsDiv.innerHTML = html;
     sceneContainer.appendChild(controlsDiv);
-    
-    // Make sure rotation buttons are removed even if they're added after the initial DOM check
-    const rotateButtons = document.querySelectorAll('[id$="-rotate-btn"]');
-    rotateButtons.forEach(button => {
-        if (button.id !== 'model-auto-rotate') {
-            button.remove();
-        }
-    });
     
     // Add event listeners
     document.getElementById('model-scale').addEventListener('input', function(e) {
@@ -463,10 +446,6 @@ document.getElementById('lang-nl').addEventListener('click', function() {
     setLanguage('nl');
 });
 
-// Only attach zoom button event listeners
-zoomInBtn.addEventListener('click', zoomIn);
-zoomOutBtn.addEventListener('click', zoomOut);
-
 // Navigation Functions
 function showScreen(screen) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -499,7 +478,7 @@ async function requestCameraPermission() {
         
         if (hasPermission) {
             console.log('Camera permission already granted');
-            initializeCamera();
+            await initializeCamera();
             return;
         }
         
@@ -525,7 +504,7 @@ async function requestCameraPermission() {
         }
         
         // Now initialize the camera with proper settings
-        initializeCamera();
+        await initializeCamera();
     } catch (error) {
         console.error('Error requesting camera permission:', error);
         
@@ -568,156 +547,126 @@ async function requestCameraPermission() {
 async function initializeCamera() {
     const hasCameras = await getAvailableCameras();
     if (hasCameras) {
-        // We'll use index 1 to trigger our facingMode: 'environment' logic
-        // This will attempt to use the back camera on mobile devices
-        startCamera(1);
+        // Start with the back camera using facingMode
+        isUsingBackCamera = true;
+        currentCameraIndex = 1; // Mark as using back camera (index 1)
+        
+        if (isMobileDevice()) {
+            // On mobile, use facingMode directly
+            await startCameraWithFacingMode('environment');
+        } else {
+            // On desktop, try to use the second camera if available
+            const preferredIndex = availableCameras.length > 1 ? 1 : 0;
+            await fallbackToDeviceId(preferredIndex);
+        }
+        
+        // Navigate to the camera screen after camera is initialized
+        showScreen(cameraScreen);
     }
 }
 
-async function startCamera(cameraIndex = 0) {
-    // Stop any existing camera stream first
+// New function to start camera with specific facingMode
+async function startCameraWithFacingMode(mode) {
     stopCamera();
     
     try {
-        let constraints;
+        console.log(`Starting camera with facingMode: '${mode}'`);
         
-        // Try to use facingMode first if we have more than one camera or on mobile
-        if ((availableCameras.length > 1 || isMobileDevice()) && cameraIndex === 1) {
-            console.log('Attempting to use environment facing mode (back camera)');
-            constraints = { 
-                video: { 
-                    facingMode: 'environment',  // This specifically requests the back camera
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
-                }, 
-                audio: false 
-            };
-        } else if (availableCameras.length > 0) {
-            // Fall back to using deviceId if facingMode isn't supported or we're choosing a specific camera
-            const selectedCamera = availableCameras[cameraIndex % availableCameras.length];
-            console.log('Starting camera using deviceId:', selectedCamera.deviceId);
-            
-            constraints = { 
-                video: { 
-                    deviceId: { exact: selectedCamera.deviceId },
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
-                }, 
-                audio: false 
-            };
-            
-            // Store the current camera index
-            currentCameraIndex = cameraIndex % availableCameras.length;
-        } else {
-            // If no cameras were found in our enumeration, just try with basic constraints
-            console.log('No cameras in list, using basic constraints');
-            constraints = { 
-                video: {
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
-                }, 
-                audio: false 
-            };
-        }
+        const constraints = {
+            video: {
+                facingMode: mode,
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            },
+            audio: false
+        };
         
-        // Get the stream with the constraints
         cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
-        
         cameraFeed.srcObject = cameraStream;
         
         // Wait for the video to be ready
-        cameraFeed.onloadedmetadata = () => {
-            // Set canvas dimensions to match video
-            // Consider container aspect ratio
-            const containerAspect = 4/3; // 500px / 375px
-            const videoAspect = cameraFeed.videoWidth / cameraFeed.videoHeight;
-            
-            if (videoAspect > containerAspect) {
-                // Video is wider than container
-                cameraCanvas.width = cameraFeed.videoHeight * containerAspect;
-                cameraCanvas.height = cameraFeed.videoHeight;
-            } else {
-                // Video is taller than container
-                cameraCanvas.width = cameraFeed.videoWidth;
-                cameraCanvas.height = cameraFeed.videoWidth / containerAspect;
-            }
-            
-            // Log for debugging
-            console.log(`Camera feed dimensions: ${cameraFeed.videoWidth}x${cameraFeed.videoHeight}`);
-            console.log(`Canvas dimensions: ${cameraCanvas.width}x${cameraCanvas.height}`);
-            
-            // Re-enumerate cameras after successful camera initialization
-            // This ensures we have complete camera information after permissions are granted
-            refreshCameraList();
-            
-            showScreen(cameraScreen);
-        };
+        return new Promise((resolve) => {
+            cameraFeed.onloadedmetadata = () => {
+                // Set canvas dimensions to match video
+                const containerAspect = 4/3;
+                const videoAspect = cameraFeed.videoWidth / cameraFeed.videoHeight;
+                
+                if (videoAspect > containerAspect) {
+                    cameraCanvas.width = cameraFeed.videoHeight * containerAspect;
+                    cameraCanvas.height = cameraFeed.videoHeight;
+                } else {
+                    cameraCanvas.width = cameraFeed.videoWidth;
+                    cameraCanvas.height = cameraFeed.videoWidth / containerAspect;
+                }
+                
+                console.log(`Camera feed dimensions: ${cameraFeed.videoWidth}x${cameraFeed.videoHeight}`);
+                console.log(`Canvas dimensions: ${cameraCanvas.width}x${cameraCanvas.height}`);
+                
+                refreshCameraList();
+                resolve();
+            };
+        });
     } catch (error) {
-        console.error('Error accessing camera:', error);
+        console.error(`Error accessing camera with facingMode '${mode}':`, error);
         
-        // If facingMode fails, try again with deviceId approach
-        if (error.name === 'OverconstrainedError' && 
-            error.constraint === 'facingMode' && 
-            availableCameras.length > 0) {
-            
-            console.log('Falling back to deviceId selection');
-            
-            // Try to select an appropriate camera from the list (not index 0 which is usually the front camera)
-            const backCameraIndex = availableCameras.length > 1 ? 1 : 0;
-            currentCameraIndex = backCameraIndex;
-            
-            try {
-                const selectedCamera = availableCameras[backCameraIndex];
-                console.log('Trying with camera:', selectedCamera.label || `Camera ${backCameraIndex + 1}`);
-                
-                cameraStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { 
-                        deviceId: { exact: selectedCamera.deviceId },
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
-                    }, 
-                    audio: false 
-                });
-                
-                cameraFeed.srcObject = cameraStream;
-                
-                // Wait for the video to be ready
-                cameraFeed.onloadedmetadata = () => {
-                    // Set canvas dimensions to match video
-                    const containerAspect = 4/3;
-                    const videoAspect = cameraFeed.videoWidth / cameraFeed.videoHeight;
-                    
-                    if (videoAspect > containerAspect) {
-                        cameraCanvas.width = cameraFeed.videoHeight * containerAspect;
-                        cameraCanvas.height = cameraFeed.videoHeight;
-                    } else {
-                        cameraCanvas.width = cameraFeed.videoWidth;
-                        cameraCanvas.height = cameraFeed.videoWidth / containerAspect;
-                    }
-                    
-                    refreshCameraList();
-                    showScreen(cameraScreen);
-                };
-                
-                return;
-            } catch (fallbackError) {
-                console.error('Fallback camera access failed:', fallbackError);
-            }
-        }
-        
-        alert(`Unable to access camera. Please ensure you have given camera permissions and try again.`);
+        // If facingMode approach fails, fall back to the deviceId approach
+        return fallbackToDeviceId(mode === 'environment' ? 1 : 0);
     }
 }
 
-// Function to switch to the next available camera
+// Fallback function to use deviceId when facingMode fails
+async function fallbackToDeviceId(cameraIndex) {
+    try {
+        if (availableCameras.length <= cameraIndex) {
+            cameraIndex = 0; // Fallback to the first camera if the requested index is not available
+        }
+        
+        console.log(`Falling back to deviceId selection, camera index: ${cameraIndex}`);
+        const selectedCamera = availableCameras[cameraIndex];
+        
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                deviceId: { exact: selectedCamera.deviceId },
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            },
+            audio: false
+        });
+        
+        currentCameraIndex = cameraIndex;
+        cameraFeed.srcObject = cameraStream;
+        
+        return new Promise((resolve) => {
+            cameraFeed.onloadedmetadata = () => {
+                const containerAspect = 4/3;
+                const videoAspect = cameraFeed.videoWidth / cameraFeed.videoHeight;
+                
+                if (videoAspect > containerAspect) {
+                    cameraCanvas.width = cameraFeed.videoHeight * containerAspect;
+                    cameraCanvas.height = cameraFeed.videoHeight;
+                } else {
+                    cameraCanvas.width = cameraFeed.videoWidth;
+                    cameraCanvas.height = cameraFeed.videoWidth / containerAspect;
+                }
+                
+                refreshCameraList();
+                resolve();
+            };
+        });
+    } catch (error) {
+        console.error('Fallback camera access failed:', error);
+        alert('Unable to access any camera. Please check your camera permissions and try again.');
+        // Return a resolved promise to prevent further issues
+        return Promise.resolve();
+    }
+}
+
+// Function to switch between cameras
 function switchCamera() {
     if (availableCameras.length <= 1) {
         alert('Only one camera is available on this device.');
         return;
     }
-    
-    // Calculate next camera index
-    const nextCameraIndex = (currentCameraIndex + 1) % availableCameras.length;
     
     // Show a brief switching message
     const switchingMessage = document.createElement('div');
@@ -733,14 +682,31 @@ function switchCamera() {
     switchingMessage.innerHTML = 'Switching camera...';
     document.querySelector('.camera-container').appendChild(switchingMessage);
     
-    // Start the new camera after a brief delay to show the message
-    setTimeout(() => {
-        startCamera(nextCameraIndex);
-        // Remove the message
-        if (switchingMessage.parentNode) {
-            switchingMessage.parentNode.removeChild(switchingMessage);
-        }
-    }, 500);
+    // If we're currently using the back camera (which is usually started with facingMode)
+    // switch to the front camera by using facingMode: 'user'
+    if (currentCameraIndex === 1 || isUsingBackCamera) {
+        isUsingBackCamera = false;
+        currentCameraIndex = 0; // Mark that we're using the front camera now
+        
+        setTimeout(() => {
+            startCameraWithFacingMode('user');
+            if (switchingMessage.parentNode) {
+                switchingMessage.parentNode.removeChild(switchingMessage);
+            }
+        }, 500);
+    } 
+    // If we're using the front camera, switch to the back camera
+    else {
+        isUsingBackCamera = true;
+        currentCameraIndex = 1; // Mark that we're using the back camera
+        
+        setTimeout(() => {
+            startCameraWithFacingMode('environment');
+            if (switchingMessage.parentNode) {
+                switchingMessage.parentNode.removeChild(switchingMessage);
+            }
+        }, 500);
+    }
 }
 
 function stopCamera() {
@@ -1106,25 +1072,6 @@ function stopThreeJs() {
     modelLoaded = false;
     
     window.removeEventListener('resize', onWindowResize);
-}
-
-// Control Functions
-function zoomIn() {
-    if (threeJsCamera && threeJsCamera.position.z > 5) {
-        threeJsCamera.position.z -= 5.0; // Much larger zoom step
-        if (threeJsControls) {
-            threeJsControls.update();
-        }
-    }
-}
-
-function zoomOut() {
-    if (threeJsCamera && threeJsCamera.position.z < 100) {
-        threeJsCamera.position.z += 5.0; // Much larger zoom step
-        if (threeJsControls) {
-            threeJsControls.update();
-        }
-    }
 }
 
 function saveImage() {
