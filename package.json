@@ -1,0 +1,14 @@
+{
+  "name": "project-ar-in-wintercircus-milbergers",
+  "version": "1.0.0",
+  "description": "TEMBO AR TAAK - EMILE BERGERS",
+  "main": "app.js",
+  "scripts": {
+    "start": "nodemon app.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "nodemon": "^3.1.10"
+  }
+}

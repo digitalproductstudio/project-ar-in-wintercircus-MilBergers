@@ -1,3 +1,75 @@
+// Language translations
+const translations = {
+    en: {
+        title: "Elephant Drawing 3D Experience",
+        description: "Color the elephant template, then scan it to see your drawing come to life as a 3D elephant!",
+        startBtn: "Start Experience",
+        templateBtn: "Download Template",
+        captureBtn: "Capture",
+        switchCameraBtn: "Switch Camera",
+        backBtn: "Back",
+        processingText: "Processing your elephant...",
+        restartBtn: "Scan Another",
+        saveBtn: "Save Image",
+        loadingScene: "Loading scene...",
+        loadingModel: "Loading 3D model...",
+        errorLoadingScene: "Scene model could not be loaded. Using default background.",
+        errorLoadingModel: "Failed to load 3D model: ",
+        modelLoadError: "Model Loading Error",
+        modelLoadErrorMsg: "Please check your model path and file format.",
+        expectedPath: "Expected path: assets/models/elephant.gltf",
+        closeBtn: "Close"
+    },
+    nl: {
+        title: "Olifant Tekening 3D Ervaring",
+        description: "Kleur de olifant sjabloon, scan het dan om je tekening tot leven te zien komen als een 3D olifant!",
+        startBtn: "Start Ervaring",
+        templateBtn: "Sjabloon Downloaden",
+        captureBtn: "Vastleggen",
+        switchCameraBtn: "Camera Wisselen",
+        backBtn: "Terug",
+        processingText: "Je olifant verwerken...",
+        restartBtn: "Nog Een Scannen",
+        saveBtn: "Afbeelding Opslaan",
+        loadingScene: "Scène laden...",
+        loadingModel: "3D model laden...",
+        errorLoadingScene: "Scènemodel kon niet worden geladen. Standaardachtergrond gebruiken.",
+        errorLoadingModel: "Kan 3D-model niet laden: ",
+        modelLoadError: "Fout bij laden model",
+        modelLoadErrorMsg: "Controleer je modelpad en bestandsformaat.",
+        expectedPath: "Verwacht pad: assets/models/elephant.gltf",
+        closeBtn: "Sluiten"
+    }
+};
+
+// Current language
+let currentLanguage = 'en';
+
+// Function to set the language
+function setLanguage(lang) {
+    currentLanguage = lang;
+    
+    // Update UI elements
+    document.querySelectorAll('[data-i18n]').forEach(element => {
+        const key = element.getAttribute('data-i18n');
+        if (translations[lang][key]) {
+            element.textContent = translations[lang][key];
+        }
+    });
+    
+    // Update language buttons
+    document.querySelectorAll('.lang-btn').forEach(button => {
+        if (button.getAttribute('data-lang') === lang) {
+            button.classList.add('active');
+        } else {
+            button.classList.remove('active');
+        }
+    });
+    
+    // Store the selected language in localStorage
+    localStorage.setItem('preferredLanguage', lang);
+}
+
 // Add this function to load the 3D scene model
 function loadSceneModel() {
     return new Promise((resolve, reject) => {
@@ -17,7 +89,7 @@ function loadSceneModel() {
         loadingMessage.style.color = 'white';
         loadingMessage.style.fontSize = '18px';
         loadingMessage.style.textAlign = 'center';
-        loadingMessage.innerHTML = 'Loading scene...';
+        loadingMessage.innerHTML = translations[currentLanguage].loadingScene || 'Loading scene...';
         loadingMessage.id = 'scene-loading-message';
         sceneContainer.appendChild(loadingMessage);
         
@@ -79,7 +151,7 @@ function loadSceneModel() {
                     
                     const loadingMsg = document.getElementById('scene-loading-message');
                     if (loadingMsg) {
-                        loadingMsg.innerHTML = 'Loading scene: ' + percentComplete.toFixed(0) + '%';
+                        loadingMsg.innerHTML = translations[currentLanguage].loadingScene + ' ' + percentComplete.toFixed(0) + '%';
                     }
                 }
             },
@@ -103,7 +175,7 @@ function loadSceneModel() {
                 errorDiv.style.borderRadius = '5px';
                 errorDiv.style.fontSize = '14px';
                 errorDiv.style.zIndex = '1000';
-                errorDiv.innerHTML = 'Scene model could not be loaded. Using default background.';
+                errorDiv.innerHTML = translations[currentLanguage].errorLoadingScene;
                 sceneContainer.appendChild(errorDiv);
                 
                 // Auto-hide the message after 5 seconds
@@ -126,7 +198,9 @@ function loadSceneModel() {
             }
         );
     });
-}// DOM Elements
+}
+
+// DOM Elements
 const introScreen = document.getElementById('intro-screen');
 const cameraScreen = document.getElementById('camera-screen');
 const processingScreen = document.getElementById('processing-screen');
@@ -138,6 +212,7 @@ const captureBtn = document.getElementById('capture-btn');
 const backToIntroBtn = document.getElementById('back-to-intro-btn');
 const restartBtn = document.getElementById('restart-btn');
 const saveBtn = document.getElementById('save-btn');
+const switchCameraBtn = document.getElementById('switch-camera-btn');
 
 const cameraFeed = document.getElementById('camera-feed');
 const cameraCanvas = document.getElementById('camera-canvas');
@@ -170,6 +245,8 @@ let threeJsControls = null; // Orbit controls for easier interaction
 let elephantModel = null;
 let elephantTexture = null;
 let modelLoaded = false; // Flag to track model loading
+let availableCameras = [];
+let currentCameraIndex = 0;
 
 // Elephant model configuration - you can adjust these as needed
 const modelConfig = {
@@ -278,13 +355,46 @@ function updateModelFromConfig() {
     }
 }
 
+// Function to enumerate available cameras
+async function getAvailableCameras() {
+    try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        availableCameras = devices.filter(device => device.kind === 'videoinput');
+        console.log('Available cameras:', availableCameras);
+        
+        // If no cameras found, show an error
+        if (availableCameras.length === 0) {
+            alert('No cameras detected on your device.');
+            return false;
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('Error enumerating devices:', error);
+        alert('Could not access camera devices. Please ensure you have granted camera permissions.');
+        return false;
+    }
+}
+
 // Event Listeners
-startBtn.addEventListener('click', startCamera);
+startBtn.addEventListener('click', initializeCamera);
 templateBtn.addEventListener('click', downloadTemplate);
 captureBtn.addEventListener('click', captureImage);
 backToIntroBtn.addEventListener('click', goToIntroScreen);
 restartBtn.addEventListener('click', restart);
 saveBtn.addEventListener('click', saveImage);
+if (switchCameraBtn) {
+    switchCameraBtn.addEventListener('click', switchCamera);
+}
+
+// Language button event listeners
+document.getElementById('lang-en').addEventListener('click', function() {
+    setLanguage('en');
+});
+
+document.getElementById('lang-nl').addEventListener('click', function() {
+    setLanguage('nl');
+});
 
 // Only attach zoom button event listeners
 zoomInBtn.addEventListener('click', zoomIn);
@@ -307,11 +417,35 @@ function restart() {
 }
 
 // Camera Functions
-async function startCamera() {
+async function initializeCamera() {
+    const hasCameras = await getAvailableCameras();
+    if (hasCameras) {
+        startCamera(0); // Start with the first camera
+    }
+}
+
+async function startCamera(cameraIndex = 0) {
+    // Stop any existing camera stream first
+    stopCamera();
+    
+    // Make sure we have a list of available cameras
+    if (availableCameras.length === 0) {
+        const hasCameras = await getAvailableCameras();
+        if (!hasCameras) return;
+    }
+    
+    // Set the current camera index
+    currentCameraIndex = cameraIndex % availableCameras.length;
+    
     try {
+        // Get the selected camera device ID
+        const selectedCamera = availableCameras[currentCameraIndex];
+        console.log('Starting camera:', selectedCamera.label || `Camera ${currentCameraIndex + 1}`);
+        
+        // Get the stream with the specific device ID
         cameraStream = await navigator.mediaDevices.getUserMedia({ 
             video: { 
-                facingMode: 'environment',
+                deviceId: { exact: selectedCamera.deviceId },
                 width: { ideal: 1280 },
                 height: { ideal: 720 }
             }, 
@@ -345,8 +479,42 @@ async function startCamera() {
         };
     } catch (error) {
         console.error('Error accessing camera:', error);
-        alert('Unable to access camera. Please ensure you have given camera permissions and try again.');
+        alert(`Unable to access camera ${currentCameraIndex + 1}. Please ensure you have given camera permissions and try again.`);
     }
+}
+
+// Function to switch to the next available camera
+function switchCamera() {
+    if (availableCameras.length <= 1) {
+        alert('Only one camera is available on this device.');
+        return;
+    }
+    
+    // Calculate next camera index
+    const nextCameraIndex = (currentCameraIndex + 1) % availableCameras.length;
+    
+    // Show a brief switching message
+    const switchingMessage = document.createElement('div');
+    switchingMessage.style.position = 'absolute';
+    switchingMessage.style.top = '50%';
+    switchingMessage.style.left = '50%';
+    switchingMessage.style.transform = 'translate(-50%, -50%)';
+    switchingMessage.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+    switchingMessage.style.color = 'white';
+    switchingMessage.style.padding = '15px';
+    switchingMessage.style.borderRadius = '5px';
+    switchingMessage.style.zIndex = '1000';
+    switchingMessage.innerHTML = 'Switching camera...';
+    document.querySelector('.camera-container').appendChild(switchingMessage);
+    
+    // Start the new camera after a brief delay to show the message
+    setTimeout(() => {
+        startCamera(nextCameraIndex);
+        // Remove the message
+        if (switchingMessage.parentNode) {
+            switchingMessage.parentNode.removeChild(switchingMessage);
+        }
+    }, 500);
 }
 
 function stopCamera() {
@@ -542,7 +710,7 @@ function createElephantModel() {
     loadingMessage.style.color = 'white';
     loadingMessage.style.fontSize = '18px';
     loadingMessage.style.textAlign = 'center';
-    loadingMessage.innerHTML = 'Loading 3D model...';
+    loadingMessage.innerHTML = translations[currentLanguage].loadingModel || 'Loading 3D model...';
     sceneContainer.appendChild(loadingMessage);
     
     // Log model path for debugging
@@ -603,7 +771,7 @@ function createElephantModel() {
             if (xhr.lengthComputable) {
                 const percentComplete = xhr.loaded / xhr.total * 100;
                 console.log(percentComplete.toFixed(2) + '% loaded');
-                loadingMessage.innerHTML = 'Loading 3D model: ' + percentComplete.toFixed(0) + '%';
+                loadingMessage.innerHTML = translations[currentLanguage].loadingModel + ' ' + percentComplete.toFixed(0) + '%';
             }
         },
         
@@ -615,7 +783,7 @@ function createElephantModel() {
             }
             
             console.error('Error loading the model:', error);
-            showModelLoadError('Failed to load 3D model: ' + error.message);
+            showModelLoadError(translations[currentLanguage].errorLoadingModel + error.message);
         }
     );
 }
@@ -637,11 +805,11 @@ function showModelLoadError(errorMessage) {
     
     // Add error content
     errorElement.innerHTML = `
-        <h3 style="margin-top:0">Model Loading Error</h3>
+        <h3 style="margin-top:0">${translations[currentLanguage].modelLoadError}</h3>
         <p>${errorMessage}</p>
-        <p>Please check your model path and file format.</p>
-        <p>Expected path: assets/models/elephant.gltf</p>
-        <button id="error-close-btn" style="padding:8px 16px;background:#fff;color:#333;border:none;border-radius:4px;cursor:pointer;margin-top:10px;">Close</button>
+        <p>${translations[currentLanguage].modelLoadErrorMsg}</p>
+        <p>${translations[currentLanguage].expectedPath}</p>
+        <button id="error-close-btn" style="padding:8px 16px;background:#fff;color:#333;border:none;border-radius:4px;cursor:pointer;margin-top:10px;">${translations[currentLanguage].closeBtn}</button>
     `;
     
     // Add to scene container
@@ -745,3 +913,20 @@ function saveImage() {
     link.download = 'my-elephant.png';
     link.click();
 }
+
+// Initialize language
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if there's a saved language preference
+    const savedLanguage = localStorage.getItem('preferredLanguage');
+    if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'nl')) {
+        setLanguage(savedLanguage);
+    } else {
+        // Default to browser language if available, otherwise English
+        const browserLang = navigator.language || navigator.userLanguage;
+        if (browserLang && browserLang.startsWith('nl')) {
+            setLanguage('nl');
+        } else {
+            setLanguage('en');
+        }
+    }
+});
