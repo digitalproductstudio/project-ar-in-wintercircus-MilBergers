@@ -368,11 +368,22 @@ async function getAvailableCameras() {
             return false;
         }
         
+        // Update switch camera button visibility based on available cameras
+        updateSwitchCameraButtonVisibility();
+        
         return true;
     } catch (error) {
         console.error('Error enumerating devices:', error);
         alert('Could not access camera devices. Please ensure you have granted camera permissions.');
         return false;
+    }
+}
+
+// Function to update switch camera button visibility
+function updateSwitchCameraButtonVisibility() {
+    if (switchCameraBtn) {
+        // Only show switch camera button if multiple cameras are available
+        switchCameraBtn.style.display = availableCameras.length > 1 ? 'block' : 'none';
     }
 }
 
@@ -420,7 +431,9 @@ function restart() {
 async function initializeCamera() {
     const hasCameras = await getAvailableCameras();
     if (hasCameras) {
-        startCamera(2); // Start with the first camera
+        // Use second camera (index 1) if available, otherwise use first camera (index 0)
+        const preferredIndex = availableCameras.length > 1 ? 1 : 0;
+        startCamera(preferredIndex);
     }
 }
 
