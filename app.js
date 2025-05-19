@@ -387,6 +387,26 @@ function updateSwitchCameraButtonVisibility() {
     }
 }
 
+// Add this new function to refresh the camera list after permissions are granted
+async function refreshCameraList() {
+    try {
+        // Re-enumerate devices now that we have permissions
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const newCameras = devices.filter(device => device.kind === 'videoinput');
+        
+        // Log if there's any change in the camera list
+        if (newCameras.length !== availableCameras.length) {
+            console.log('Camera list updated after permission:', newCameras);
+            availableCameras = newCameras;
+        }
+        
+        // Update switch camera button visibility with the refreshed list
+        updateSwitchCameraButtonVisibility();
+    } catch (error) {
+        console.error('Error refreshing camera list:', error);
+    }
+}
+
 // Event Listeners
 startBtn.addEventListener('click', initializeCamera);
 templateBtn.addEventListener('click', downloadTemplate);
@@ -487,6 +507,10 @@ async function startCamera(cameraIndex = 0) {
             // Log for debugging
             console.log(`Camera feed dimensions: ${cameraFeed.videoWidth}x${cameraFeed.videoHeight}`);
             console.log(`Canvas dimensions: ${cameraCanvas.width}x${cameraCanvas.height}`);
+            
+            // Re-enumerate cameras after successful camera initialization
+            // This ensures we have complete camera information after permissions are granted
+            refreshCameraList();
             
             showScreen(cameraScreen);
         };
