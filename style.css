@@ -8,6 +8,25 @@
 body {
     background-color: #f5f5f5;
     color: #333;
+    font-family: "IntervogueSoftAlt-Bold";
+    position: relative;
+}
+
+/* Background elephant image */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('assets/images/tembo.webp');
+    background-repeat: no-repeat;
+    background-position: center bottom;
+    background-size: cover; /* Changed from 'contain' to 'cover' to fill the screen */
+    opacity: 0.75; /* Adjust transparency level (0.0 to 1.0) */
+    z-index: -1; /* Place behind other content */
+    pointer-events: none; /* Allows clicking through the background */
 }
 
 #app {
@@ -29,6 +48,7 @@ body {
     align-items: center;
     padding: 20px;
     text-align: center;
+    background-color: rgba(245, 245, 245, 0.7);
 }
 
 .screen.active {
@@ -58,7 +78,7 @@ body {
 }
 
 .lang-btn.active {
-    border-color: #4a8fe7;
+    border-color: #E73C3E;
     box-shadow: 0 0 5px rgba(74, 143, 231, 0.5);
 }
 
@@ -73,14 +93,16 @@ body {
 }
 
 h1 {
-    font-size: 2rem;
+    font-size: 4rem;
     margin-bottom: 1rem;
-    color: #4a8fe7;
+    color: #E73C3E;
+    font-family: "IntervogueSoftAlt-Bold";
 }
 
 p {
     margin-bottom: 2rem;
     max-width: 600px;
+    font-family: "IntervogueSoftAlt-Bold";
 }
 
 .button-container {
@@ -98,15 +120,16 @@ button {
     font-size: 1rem;
     cursor: pointer;
     transition: all 0.3s ease;
+    font-family: "IntervogueSoftAlt-Bold";
 }
 
 .primary-btn {
-    background-color: #4a8fe7;
+    background-color: #E73C3E;
     color: white;
 }
 
 .primary-btn:hover {
-    background-color: #3a7fd7;
+    background-color: #e4696b;
 }
 
 .secondary-btn {
@@ -151,14 +174,14 @@ button {
     position: absolute;
     width: 30px;
     height: 30px;
-    border: 2px solid #4a8fe7;
+    border: 2px solid #E73C3E;
 }
 
 .top-left {
     top: 30px;
     left: 30px;
-    border-top: 4px solid #4a8fe7;
-    border-left: 4px solid #4a8fe7;
+    border-top: 4px solid #E73C3E;
+    border-left: 4px solid #E73C3E;
     border-right: none;
     border-bottom: none;
 }
@@ -166,8 +189,8 @@ button {
 .top-right {
     top: 30px;
     right: 30px;
-    border-top: 4px solid #4a8fe7;
-    border-right: 4px solid #4a8fe7;
+    border-top: 4px solid #E73C3E;
+    border-right: 4px solid #E73C3E;
     border-left: none;
     border-bottom: none;
 }
@@ -175,8 +198,8 @@ button {
 .bottom-left {
     bottom: 30px;
     left: 30px;
-    border-bottom: 4px solid #4a8fe7;
-    border-left: 4px solid #4a8fe7;
+    border-bottom: 4px solid #E73C3E;
+    border-left: 4px solid #E73C3E;
     border-right: none;
     border-top: none;
 }
@@ -184,8 +207,8 @@ button {
 .bottom-right {
     bottom: 30px;
     right: 30px;
-    border-bottom: 4px solid #4a8fe7;
-    border-right: 4px solid #4a8fe7;
+    border-bottom: 4px solid #E73C3E;
+    border-right: 4px solid #E73C3E;
     border-left: none;
     border-top: none;
 }
@@ -201,7 +224,7 @@ button {
     width: 50px;
     height: 50px;
     border: 5px solid #e0e0e0;
-    border-top: 5px solid #4a8fe7;
+    border-top: 5px solid #E73C3E;
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin-bottom: 20px;
@@ -247,4 +270,49 @@ button {
 
 .control-btn:hover {
     background-color: rgba(255, 255, 255, 1);
+}
+
+/* Collaboration logos container */
+.collaboration-logos {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px; /* Space between logos */
+    z-index: 100; /* Make sure it appears on top of other elements */
+    background-color: rgba(255, 255, 255, 0.7); /* Semi-transparent background */
+    padding: 10px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.collaboration-logos a {
+    display: block;
+    text-decoration: none;
+    transition: transform 0.2s ease;
+}
+
+.collaboration-logos a:hover {
+    transform: scale(1.1); /* Slight grow effect on hover */
+}
+
+.collaboration-logos img {
+    height: 40px; /* Adjust this value based on your logo size needs */
+    width: auto;
+    object-fit: contain;
+    display: block;
+}
+
+/* For smaller screens, make the logos smaller */
+@media (max-width: 768px) {
+    .collaboration-logos {
+        bottom: 10px;
+        right: 10px;
+        padding: 8px;
+    }
+    
+    .collaboration-logos img {
+        height: 30px;
+    }
 }
