@@ -420,7 +420,7 @@ function restart() {
 async function initializeCamera() {
     const hasCameras = await getAvailableCameras();
     if (hasCameras) {
-        startCamera(0); // Start with the first camera
+        startCamera(2); // Start with the first camera
     }
 }
 
