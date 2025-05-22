@@ -23,10 +23,10 @@ body::before {
     background-image: url('assets/images/tembo.webp');
     background-repeat: no-repeat;
     background-position: center bottom;
-    background-size: cover; /* Changed from 'contain' to 'cover' to fill the screen */
-    opacity: 0.75; /* Adjust transparency level (0.0 to 1.0) */
-    z-index: -1; /* Place behind other content */
-    pointer-events: none; /* Allows clicking through the background */
+    background-size: cover;
+    opacity: 0.75;
+    z-index: -1;
+    pointer-events: none;
 }
 
 #app {
@@ -152,7 +152,7 @@ button {
     position: relative;
     width: 100%;
     max-width: 500px;
-    height: 375px; /* Fixed height (75% of 500px) */
+    height: 375px;
     margin: 0 auto 20px auto;
     overflow: hidden;
     border-radius: 10px;
@@ -249,43 +249,11 @@ button {
     border-radius: 10px;
     overflow: hidden;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    cursor: grab; /* Indicates the scene can be dragged */
+    cursor: grab;
 }
 
 #scene-container:active {
-    cursor: grabbing; /* Changes cursor when actively dragging */
-}
-
-/* Collaboration logos container */
-.collaboration-logos {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    display: flex;
-    align-items: center;
-    gap: 15px; /* Space between logos */
-    z-index: 100; /* Make sure it appears on top of other elements */
-    background-color: rgba(255, 255, 255, 0.7); /* Semi-transparent background */
-    padding: 10px;
-    border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.collaboration-logos a {
-    display: block;
-    text-decoration: none;
-    transition: transform 0.2s ease;
-}
-
-.collaboration-logos a:hover {
-    transform: scale(1.1); /* Slight grow effect on hover */
-}
-
-.collaboration-logos img {
-    height: 40px; /* Adjust this value based on your logo size needs */
-    width: auto;
-    object-fit: contain;
-    display: block;
+    cursor: grabbing;
 }
 
 /* Permission screen styles */
@@ -309,6 +277,38 @@ button {
     margin-bottom: 20px;
     width: 100%;
     max-width: 80%;
+}
+
+/* Collaboration logos container */
+.collaboration-logos {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    z-index: 100;
+    background-color: rgba(255, 255, 255, 0.7);
+    padding: 10px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.collaboration-logos a {
+    display: block;
+    text-decoration: none;
+    transition: transform 0.2s ease;
+}
+
+.collaboration-logos a:hover {
+    transform: scale(1.1);
+}
+
+.collaboration-logos img {
+    height: 40px;
+    width: auto;
+    object-fit: contain;
+    display: block;
 }
 
 /* For smaller screens, make the logos smaller */

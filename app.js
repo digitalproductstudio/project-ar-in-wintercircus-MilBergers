@@ -11,15 +11,12 @@ const translations = {
         processingText: "Processing your elephant...",
         restartBtn: "Scan Another",
         saveBtn: "Save Image",
-        loadingScene: "Loading scene...",
         loadingModel: "Loading 3D model...",
-        errorLoadingScene: "Scene model could not be loaded. Using default background.",
         errorLoadingModel: "Failed to load 3D model: ",
         modelLoadError: "Model Loading Error",
         modelLoadErrorMsg: "Please check your model path and file format.",
         expectedPath: "Expected path: assets/models/elephant.gltf",
         closeBtn: "Close",
-        // New permission translations
         permissionTitle: "Camera Access Required",
         permissionText1: "To scan your drawing, we need access to your camera.",
         permissionText2: "When prompted, please tap \"Allow\" to continue.",
@@ -37,15 +34,12 @@ const translations = {
         processingText: "Je olifant verwerken...",
         restartBtn: "Nog Een Scannen",
         saveBtn: "Afbeelding Opslaan",
-        loadingScene: "Scène laden...",
         loadingModel: "3D model laden...",
-        errorLoadingScene: "Scènemodel kon niet worden geladen. Standaardachtergrond gebruiken.",
         errorLoadingModel: "Kan 3D-model niet laden: ",
         modelLoadError: "Fout bij laden model",
         modelLoadErrorMsg: "Controleer je modelpad en bestandsformaat.",
         expectedPath: "Verwacht pad: assets/models/elephant.gltf",
         closeBtn: "Sluiten",
-        // New permission translations
         permissionTitle: "Camera Toegang Vereist",
         permissionText1: "Om je tekening te scannen, hebben we toegang tot je camera nodig.",
         permissionText2: "Wanneer gevraagd, tik op \"Toestaan\" om door te gaan.",
@@ -82,136 +76,6 @@ function setLanguage(lang) {
     localStorage.setItem('preferredLanguage', lang);
 }
 
-// Add this function to load the 3D scene model
-function loadSceneModel() {
-    return new Promise((resolve, reject) => {
-        // Check if GLTFLoader is available
-        if (!THREE.GLTFLoader) {
-            console.error('THREE.GLTFLoader is not available');
-            reject('THREE.GLTFLoader is not available');
-            return;
-        }
-        
-        // Show loading message
-        const loadingMessage = document.createElement('div');
-        loadingMessage.style.position = 'absolute';
-        loadingMessage.style.top = '50%';
-        loadingMessage.style.left = '50%';
-        loadingMessage.style.transform = 'translate(-50%, -50%)';
-        loadingMessage.style.color = 'white';
-        loadingMessage.style.fontSize = '18px';
-        loadingMessage.style.textAlign = 'center';
-        loadingMessage.innerHTML = translations[currentLanguage].loadingScene || 'Loading scene...';
-        loadingMessage.id = 'scene-loading-message';
-        sceneContainer.appendChild(loadingMessage);
-        
-        // Path to your scene model
-        const scenePath = 'assets/models/scene/scene.gltf';
-        console.log('Attempting to load 3D scene from:', scenePath);
-        
-        // Load the scene using GLTFLoader
-        const loader = new THREE.GLTFLoader();
-        loader.load(
-            scenePath,
-            function(gltf) {
-                // Remove loading message
-                const loadingMsg = document.getElementById('scene-loading-message');
-                if (loadingMsg && loadingMsg.parentNode) {
-                    loadingMsg.parentNode.removeChild(loadingMsg);
-                }
-                
-                console.log('Scene model loaded successfully');
-                sceneModel = gltf.scene;
-                
-                // Enable shadows for the scene
-                sceneModel.traverse(function(child) {
-                    if (child.isMesh) {
-                        child.castShadow = true;
-                        child.receiveShadow = true;
-                    }
-                });
-                
-                // Position and scale the scene as needed
-                sceneModel.scale.set(1, 1, 1); // Adjust as needed
-                sceneModel.position.set(0, 0, 0); // Center the scene
-                
-                // Add scene to the main scene
-                threeJsScene.add(sceneModel);
-                
-                // Adjust camera position to see the whole scene
-                // This will be overridden by OrbitControls if you interact with it
-                const sceneBoundingBox = new THREE.Box3().setFromObject(sceneModel);
-                const sceneSize = new THREE.Vector3();
-                sceneBoundingBox.getSize(sceneSize);
-                
-                const maxDim = Math.max(sceneSize.x, sceneSize.y, sceneSize.z);
-                threeJsCamera.position.set(maxDim, maxDim * 0.7, maxDim);
-                threeJsCamera.lookAt(0, 0, 0);
-                
-                // Update controls
-                if (threeJsControls) {
-                    threeJsControls.target.set(0, sceneSize.y * 0.3, 0); // Look at middle of scene
-                    threeJsControls.update();
-                }
-                
-                resolve();
-            },
-            function(xhr) {
-                if (xhr.lengthComputable) {
-                    const percentComplete = xhr.loaded / xhr.total * 100;
-                    console.log('Scene loading: ' + percentComplete.toFixed(2) + '% loaded');
-                    
-                    const loadingMsg = document.getElementById('scene-loading-message');
-                    if (loadingMsg) {
-                        loadingMsg.innerHTML = translations[currentLanguage].loadingScene + ' ' + percentComplete.toFixed(0) + '%';
-                    }
-                }
-            },
-            function(error) {
-                // Remove loading message
-                const loadingMsg = document.getElementById('scene-loading-message');
-                if (loadingMsg && loadingMsg.parentNode) {
-                    loadingMsg.parentNode.removeChild(loadingMsg);
-                }
-                
-                console.error('Error loading scene:', error);
-                
-                // Show error message but continue with loading the elephant
-                const errorDiv = document.createElement('div');
-                errorDiv.style.position = 'absolute';
-                errorDiv.style.bottom = '10px';
-                errorDiv.style.right = '10px';
-                errorDiv.style.backgroundColor = 'rgba(255, 0, 0, 0.7)';
-                errorDiv.style.color = 'white';
-                errorDiv.style.padding = '10px';
-                errorDiv.style.borderRadius = '5px';
-                errorDiv.style.fontSize = '14px';
-                errorDiv.style.zIndex = '1000';
-                errorDiv.innerHTML = translations[currentLanguage].errorLoadingScene;
-                sceneContainer.appendChild(errorDiv);
-                
-                // Auto-hide the message after 5 seconds
-                setTimeout(() => {
-                    if (errorDiv.parentNode) {
-                        errorDiv.parentNode.removeChild(errorDiv);
-                    }
-                }, 5000);
-                
-                // Create simple ground as fallback
-                const groundGeometry = new THREE.PlaneGeometry(50, 50);
-                const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 }); // Brown
-                const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-                ground.rotation.x = -Math.PI / 2; // Rotate to be horizontal
-                ground.position.y = -1.5;
-                ground.receiveShadow = true;
-                threeJsScene.add(ground);
-                
-                resolve(); // Resolve anyway so the elephant can be loaded
-            }
-        );
-    });
-}
-
 // DOM Elements
 const introScreen = document.getElementById('intro-screen');
 const permissionScreen = document.getElementById('permission-screen');
@@ -233,12 +97,15 @@ const cameraFeed = document.getElementById('camera-feed');
 const cameraCanvas = document.getElementById('camera-canvas');
 const sceneContainer = document.getElementById('scene-container');
 
-// Add the GLTFLoader for loading the 3D model
-// Make sure to include the Three.js GLTFLoader in your imports at the top of the HTML file
-const GLTFLoader = THREE.GLTFLoader || null;
-if (!GLTFLoader) {
-    console.error('THREE.GLTFLoader not found. Make sure to include it in your HTML.');
-}
+// Remove unused control buttons from the DOM
+const rotateLeftBtn = document.getElementById('rotate-left-btn');
+const rotateRightBtn = document.getElementById('rotate-right-btn');
+const zoomInBtn = document.getElementById('zoom-in-btn');
+const zoomOutBtn = document.getElementById('zoom-out-btn');
+if (rotateLeftBtn) rotateLeftBtn.remove();
+if (rotateRightBtn) rotateRightBtn.remove();
+if (zoomInBtn) zoomInBtn.remove();
+if (zoomOutBtn) zoomOutBtn.remove();
 
 // App State
 let cameraStream = null;
@@ -246,112 +113,24 @@ let capturedImage = null;
 let threeJsScene = null;
 let threeJsRenderer = null;
 let threeJsCamera = null;
-let threeJsControls = null; // Orbit controls for easier interaction
+let threeJsControls = null;
 let elephantModel = null;
 let elephantTexture = null;
-let modelLoaded = false; // Flag to track model loading
+let modelLoaded = false;
 let availableCameras = [];
 let currentCameraIndex = 0;
-let isUsingBackCamera = true; // Flag to track which camera type is active
+let isUsingBackCamera = true;
 
-// Elephant model configuration - you can adjust these as needed
+// Elephant model configuration
 const modelConfig = {
-    scale: 1.5,        // Overall scale of the model (1.0 = 100%)
-    positionX: 0,      // Left/right position
-    positionY: -2,     // Up/down position  
-    positionZ: 0,      // Forward/backward position
-    rotationY: 0,      // Rotation around Y axis (in radians)
-    autoRotate: true,  // Auto-rotate enabled by default
-    rotationSpeed: 0.005 // Speed of auto-rotation
+    scale: 0.15,
+    positionX: 0,
+    positionY: -5,
+    positionZ: 0,
+    rotationY: 0,
+    autoRotate: true,
+    rotationSpeed: 0.0025
 };
-
-// Add UI for adjusting model parameters
-function addModelControls() {
-    if (!elephantModel) return;
-    
-    const controlsDiv = document.createElement('div');
-    controlsDiv.style.position = 'absolute';
-    controlsDiv.style.bottom = '10px';
-    controlsDiv.style.left = '10px';
-    controlsDiv.style.backgroundColor = 'rgba(0,0,0,0.5)';
-    controlsDiv.style.padding = '10px';
-    controlsDiv.style.borderRadius = '5px';
-    controlsDiv.style.color = 'white';
-    
-    let html = '<div style="font-weight:bold;margin-bottom:5px;">Model Controls:</div>';
-    
-    // Scale slider
-    html += '<div style="margin-bottom:5px;"><label>Scale: </label>' +
-           '<input type="range" id="model-scale" min="0.5" max="3" step="0.1" value="' + modelConfig.scale + '" style="width:100px;"></div>';
-    
-    // Position Y slider
-    html += '<div style="margin-bottom:5px;"><label>Height: </label>' +
-           '<input type="range" id="model-position-y" min="-5" max="2" step="0.1" value="' + modelConfig.positionY + '" style="width:100px;"></div>';
-           
-    // Auto-rotate checkbox
-    html += '<div style="margin-bottom:5px;"><label>Auto-rotate: </label>' +
-           '<input type="checkbox" id="model-auto-rotate"' + (modelConfig.autoRotate ? ' checked' : '') + '></div>';
-    
-    // Rotation speed slider (only visible when auto-rotate is enabled)
-    html += '<div style="margin-bottom:5px;' + (modelConfig.autoRotate ? '' : 'display:none;') + '" id="rotation-speed-container">' +
-           '<label>Rotation Speed: </label>' +
-           '<input type="range" id="model-rotation-speed" min="0.001" max="0.02" step="0.001" value="' + modelConfig.rotationSpeed + '" style="width:100px;"></div>';
-    
-    controlsDiv.innerHTML = html;
-    sceneContainer.appendChild(controlsDiv);
-    
-    // Add event listeners
-    document.getElementById('model-scale').addEventListener('input', function(e) {
-        const newScale = parseFloat(e.target.value);
-        modelConfig.scale = newScale;
-        updateModelFromConfig();
-    });
-    
-    document.getElementById('model-position-y').addEventListener('input', function(e) {
-        const newPosY = parseFloat(e.target.value);
-        modelConfig.positionY = newPosY;
-        updateModelFromConfig();
-    });
-    
-    document.getElementById('model-auto-rotate').addEventListener('change', function(e) {
-        modelConfig.autoRotate = e.target.checked;
-        
-        // Show/hide rotation speed control
-        const rotationSpeedContainer = document.getElementById('rotation-speed-container');
-        if (rotationSpeedContainer) {
-            rotationSpeedContainer.style.display = modelConfig.autoRotate ? 'block' : 'none';
-        }
-    });
-    
-    document.getElementById('model-rotation-speed').addEventListener('input', function(e) {
-        const newSpeed = parseFloat(e.target.value);
-        modelConfig.rotationSpeed = newSpeed;
-    });
-}
-
-// Function to update model from config
-function updateModelFromConfig() {
-    if (!elephantModel) return;
-    
-    elephantModel.scale.set(
-        modelConfig.scale, 
-        modelConfig.scale, 
-        modelConfig.scale
-    );
-    
-    elephantModel.position.set(
-        modelConfig.positionX, 
-        modelConfig.positionY, 
-        modelConfig.positionZ
-    );
-    
-    elephantModel.rotation.y = modelConfig.rotationY;
-    
-    // Force a render
-    if (threeJsRenderer && threeJsScene && threeJsCamera) {
-        threeJsRenderer.render(threeJsScene, threeJsCamera);
-    }
-}
 
 // Helper function to detect if we're on a mobile device
 function isMobileDevice() {
@@ -365,15 +144,12 @@ async function getAvailableCameras() {
         availableCameras = devices.filter(device => device.kind === 'videoinput');
         console.log('Available cameras:', availableCameras);
         
-        // If no cameras found, show an error
         if (availableCameras.length === 0) {
             alert('No cameras detected on your device.');
             return false;
         }
         
-        // Update switch camera button visibility based on available cameras
         updateSwitchCameraButtonVisibility();
-        
         return true;
     } catch (error) {
         console.error('Error enumerating devices:', error);
@@ -385,7 +161,6 @@ async function getAvailableCameras() {
 // Function to update switch camera button visibility
 function updateSwitchCameraButtonVisibility() {
     if (switchCameraBtn) {
-        // Only show switch camera button if multiple cameras are available
         const hasMultipleCameras = availableCameras.length > 1;
         console.log('Multiple cameras available:', hasMultipleCameras);
         switchCameraBtn.style.display = hasMultipleCameras ? 'block' : 'none';
@@ -395,24 +170,18 @@ function updateSwitchCameraButtonVisibility() {
 // Function to refresh the camera list after permissions are granted
 async function refreshCameraList() {
     try {
-        // Re-enumerate devices now that we have permissions
         const devices = await navigator.mediaDevices.enumerateDevices();
         const newCameras = devices.filter(device => device.kind === 'videoinput');
         
-        // Log camera information
         console.log('Refreshed camera list:', newCameras);
         
-        // If we have new camera information
         if (newCameras.length > 0) {
-            // Update our camera list
             availableCameras = newCameras;
             
-            // Log if there are multiple cameras
             if (availableCameras.length > 1) {
                 console.log('Multiple cameras detected:', availableCameras.length);
             }
             
-            // Update switch camera button visibility
             updateSwitchCameraButtonVisibility();
         }
     } catch (error) {
@@ -469,21 +238,17 @@ function restart() {
 // Function to request camera permission
 async function requestCameraPermission() {
     try {
-        // First, check if we already have permissions
         const devices = await navigator.mediaDevices.enumerateDevices();
         const cameras = devices.filter(device => device.kind === 'videoinput');
         
-        // If we have camera info with labels, we likely already have permission
         const hasPermission = cameras.some(camera => camera.label && camera.label.length > 0);
         
         if (hasPermission) {
             console.log('Camera permission already granted');
-            await initializeCamera();
+            initializeCamera();
             return;
         }
         
-        // Otherwise, request access to trigger the permission prompt
-        // Try with facingMode: 'environment' first to get the back camera on mobile
         console.log('Requesting camera permission with environment facing mode...');
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -491,24 +256,19 @@ async function requestCameraPermission() {
                 audio: false 
             });
             
-            // Stop the stream immediately, we just needed to trigger the permission prompt
             stream.getTracks().forEach(track => track.stop());
-            
             console.log('Camera permission granted with environment facing mode');
         } catch (error) {
-            // If environment mode fails, try with basic video constraints
             console.log('Environment mode failed, trying basic permissions:', error);
             const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
             stream.getTracks().forEach(track => track.stop());
             console.log('Camera permission granted with basic constraints');
         }
         
-        // Now initialize the camera with proper settings
-        await initializeCamera();
+        initializeCamera();
     } catch (error) {
         console.error('Error requesting camera permission:', error);
         
-        // Show error message
         const errorMsg = document.createElement('div');
         errorMsg.style.color = '#E73C3E';
         errorMsg.style.marginBottom = '20px';
@@ -517,24 +277,19 @@ async function requestCameraPermission() {
         errorMsg.style.textAlign = 'center';
         errorMsg.innerHTML = translations[currentLanguage].permissionDenied;
         
-        // Find or create an error container to avoid duplicate messages
         let errorContainer = permissionScreen.querySelector('.error-container');
         if (!errorContainer) {
             errorContainer = document.createElement('div');
             errorContainer.className = 'error-container';
             
-            // Insert the error container before the button container
             const buttonContainer = permissionScreen.querySelector('.button-container');
             permissionScreen.insertBefore(errorContainer, buttonContainer);
         } else {
-            // Clear any existing error messages
             errorContainer.innerHTML = '';
         }
         
-        // Add the error message to the container
         errorContainer.appendChild(errorMsg);
         
-        // Remove the error message after 5 seconds
         setTimeout(() => {
             if (errorMsg.parentNode) {
                 errorMsg.parentNode.removeChild(errorMsg);
@@ -547,25 +302,19 @@ async function requestCameraPermission() {
 async function initializeCamera() {
     const hasCameras = await getAvailableCameras();
     if (hasCameras) {
-        // Start with the back camera using facingMode
         isUsingBackCamera = true;
-        currentCameraIndex = 1; // Mark as using back camera (index 1)
+        currentCameraIndex = 1;
         
         if (isMobileDevice()) {
-            // On mobile, use facingMode directly
-            await startCameraWithFacingMode('environment');
+            startCameraWithFacingMode('environment');
         } else {
-            // On desktop, try to use the second camera if available
             const preferredIndex = availableCameras.length > 1 ? 1 : 0;
-            await fallbackToDeviceId(preferredIndex);
+            fallbackToDeviceId(preferredIndex);
         }
-        
-        // Navigate to the camera screen after camera is initialized
-        showScreen(cameraScreen);
     }
 }
 
-// New function to start camera with specific facingMode
+// Function to start camera with specific facingMode
 async function startCameraWithFacingMode(mode) {
     stopCamera();
     
@@ -584,33 +333,27 @@ async function startCameraWithFacingMode(mode) {
         cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
         cameraFeed.srcObject = cameraStream;
         
-        // Wait for the video to be ready
-        return new Promise((resolve) => {
-            cameraFeed.onloadedmetadata = () => {
-                // Set canvas dimensions to match video
-                const containerAspect = 4/3;
-                const videoAspect = cameraFeed.videoWidth / cameraFeed.videoHeight;
-                
-                if (videoAspect > containerAspect) {
-                    cameraCanvas.width = cameraFeed.videoHeight * containerAspect;
-                    cameraCanvas.height = cameraFeed.videoHeight;
-                } else {
-                    cameraCanvas.width = cameraFeed.videoWidth;
-                    cameraCanvas.height = cameraFeed.videoWidth / containerAspect;
-                }
-                
-                console.log(`Camera feed dimensions: ${cameraFeed.videoWidth}x${cameraFeed.videoHeight}`);
-                console.log(`Canvas dimensions: ${cameraCanvas.width}x${cameraCanvas.height}`);
-                
-                refreshCameraList();
-                resolve();
-            };
-        });
+        cameraFeed.onloadedmetadata = () => {
+            const containerAspect = 4/3;
+            const videoAspect = cameraFeed.videoWidth / cameraFeed.videoHeight;
+            
+            if (videoAspect > containerAspect) {
+                cameraCanvas.width = cameraFeed.videoHeight * containerAspect;
+                cameraCanvas.height = cameraFeed.videoHeight;
+            } else {
+                cameraCanvas.width = cameraFeed.videoWidth;
+                cameraCanvas.height = cameraFeed.videoWidth / containerAspect;
+            }
+            
+            console.log(`Camera feed dimensions: ${cameraFeed.videoWidth}x${cameraFeed.videoHeight}`);
+            console.log(`Canvas dimensions: ${cameraCanvas.width}x${cameraCanvas.height}`);
+            
+            refreshCameraList();
+            showScreen(cameraScreen);
+        };
     } catch (error) {
         console.error(`Error accessing camera with facingMode '${mode}':`, error);
-        
-        // If facingMode approach fails, fall back to the deviceId approach
-        return fallbackToDeviceId(mode === 'environment' ? 1 : 0);
+        fallbackToDeviceId(mode === 'environment' ? 1 : 0);
     }
 }
 
@@ -618,7 +361,7 @@ async function startCameraWithFacingMode(mode) {
 async function fallbackToDeviceId(cameraIndex) {
     try {
         if (availableCameras.length <= cameraIndex) {
-            cameraIndex = 0; // Fallback to the first camera if the requested index is not available
+            cameraIndex = 0;
         }
         
         console.log(`Falling back to deviceId selection, camera index: ${cameraIndex}`);
@@ -636,28 +379,24 @@ async function fallbackToDeviceId(cameraIndex) {
         currentCameraIndex = cameraIndex;
         cameraFeed.srcObject = cameraStream;
         
-        return new Promise((resolve) => {
-            cameraFeed.onloadedmetadata = () => {
-                const containerAspect = 4/3;
-                const videoAspect = cameraFeed.videoWidth / cameraFeed.videoHeight;
-                
-                if (videoAspect > containerAspect) {
-                    cameraCanvas.width = cameraFeed.videoHeight * containerAspect;
-                    cameraCanvas.height = cameraFeed.videoHeight;
-                } else {
-                    cameraCanvas.width = cameraFeed.videoWidth;
-                    cameraCanvas.height = cameraFeed.videoWidth / containerAspect;
-                }
-                
-                refreshCameraList();
-                resolve();
-            };
-        });
+        cameraFeed.onloadedmetadata = () => {
+            const containerAspect = 4/3;
+            const videoAspect = cameraFeed.videoWidth / cameraFeed.videoHeight;
+            
+            if (videoAspect > containerAspect) {
+                cameraCanvas.width = cameraFeed.videoHeight * containerAspect;
+                cameraCanvas.height = cameraFeed.videoHeight;
+            } else {
+                cameraCanvas.width = cameraFeed.videoWidth;
+                cameraCanvas.height = cameraFeed.videoWidth / containerAspect;
+            }
+            
+            refreshCameraList();
+            showScreen(cameraScreen);
+        };
     } catch (error) {
         console.error('Fallback camera access failed:', error);
         alert('Unable to access any camera. Please check your camera permissions and try again.');
-        // Return a resolved promise to prevent further issues
-        return Promise.resolve();
     }
 }
 
@@ -668,7 +407,6 @@ function switchCamera() {
         return;
     }
     
-    // Show a brief switching message
     const switchingMessage = document.createElement('div');
     switchingMessage.style.position = 'absolute';
     switchingMessage.style.top = '50%';
@@ -682,11 +420,9 @@ function switchCamera() {
     switchingMessage.innerHTML = 'Switching camera...';
     document.querySelector('.camera-container').appendChild(switchingMessage);
     
-    // If we're currently using the back camera (which is usually started with facingMode)
-    // switch to the front camera by using facingMode: 'user'
     if (currentCameraIndex === 1 || isUsingBackCamera) {
         isUsingBackCamera = false;
-        currentCameraIndex = 0; // Mark that we're using the front camera now
+        currentCameraIndex = 0;
         
         setTimeout(() => {
             startCameraWithFacingMode('user');
@@ -694,11 +430,9 @@ function switchCamera() {
                 switchingMessage.parentNode.removeChild(switchingMessage);
             }
         }, 500);
-    } 
-    // If we're using the front camera, switch to the back camera
-    else {
+    } else {
         isUsingBackCamera = true;
-        currentCameraIndex = 1; // Mark that we're using the back camera
+        currentCameraIndex = 1;
         
         setTimeout(() => {
             startCameraWithFacingMode('environment');
@@ -719,22 +453,18 @@ function stopCamera() {
 function captureImage() {
     const context = cameraCanvas.getContext('2d');
     
-    // Clear canvas before drawing
     context.clearRect(0, 0, cameraCanvas.width, cameraCanvas.height);
     
-    // Draw video feed to canvas - ensure proper centering and scaling
     const videoAspect = cameraFeed.videoWidth / cameraFeed.videoHeight;
     const canvasAspect = cameraCanvas.width / cameraCanvas.height;
     
     let drawWidth, drawHeight, offsetX = 0, offsetY = 0;
     
     if (videoAspect > canvasAspect) {
-        // Video is wider than canvas
         drawHeight = cameraCanvas.height;
         drawWidth = cameraCanvas.height * videoAspect;
         offsetX = (cameraCanvas.width - drawWidth) / 2;
     } else {
-        // Video is taller than canvas
         drawWidth = cameraCanvas.width;
         drawHeight = cameraCanvas.width / videoAspect;
         offsetY = (cameraCanvas.height - drawHeight) / 2;
@@ -743,12 +473,10 @@ function captureImage() {
     context.drawImage(cameraFeed, offsetX, offsetY, drawWidth, drawHeight);
     capturedImage = cameraCanvas.toDataURL('image/png');
     
-    // Log for debugging
     console.log('Image captured. Canvas dimensions:', cameraCanvas.width, cameraCanvas.height);
     
     showScreen(processingScreen);
     
-    // Simulate processing time (in a real app, we'd be detecting markers here)
     setTimeout(() => {
         processImage();
     }, 1500);
@@ -756,25 +484,14 @@ function captureImage() {
 
 // Image Processing
 function processImage() {
-    // For the demo, we'll skip actual marker detection and just use the captured image
-    // In a real implementation, we would:
-    // 1. Detect the AR markers
-    // 2. Extract the colored area
-    // 3. Apply perspective correction
-    
-    // Load the image into a texture
     const textureLoader = new THREE.TextureLoader();
     elephantTexture = textureLoader.load(
         capturedImage, 
-        // onLoad callback
         function() {
-            // Once texture is loaded, set up the 3D scene
             setupThreeJs();
             showScreen(resultScreen);
         },
-        // onProgress callback (usually not needed for simple textures)
         undefined,
-        // onError callback
         function(error) {
             console.error('Error loading texture:', error);
             alert('Failed to process your image. Please try again.');
@@ -785,74 +502,61 @@ function processImage() {
 
 // Template Functions
 function downloadTemplate() {
-    // Create a link to download the template
     const link = document.createElement('a');
-    link.href = 'your-elephant-template.pdf'; // Reference to your existing template
+    link.href = 'your-elephant-template.pdf';
     link.download = 'elephant-template.pdf';
-    link.click(); // Directly download the PDF
+    link.click();
 }
 
 // Three.js Setup
 function setupThreeJs() {
     console.log("Setting up Three.js scene");
     
-    // Create Scene
     threeJsScene = new THREE.Scene();
-    threeJsScene.background = new THREE.Color(0x87CEEB); // Sky blue
+    threeJsScene.background = new THREE.Color(0x87CEEB);
     
-    // Create Camera
     threeJsCamera = new THREE.PerspectiveCamera(
         75, 
         sceneContainer.clientWidth / sceneContainer.clientHeight, 
         0.1, 
         1000
     );
-    threeJsCamera.position.z = 15; // Set default zoom to 20
-    threeJsCamera.position.y = 5;  // Slightly higher to see the scene better
+    threeJsCamera.position.z = 15;
+    threeJsCamera.position.y = 5;
     
-    // Create Renderer with preserveDrawingBuffer for screenshot capability
     threeJsRenderer = new THREE.WebGLRenderer({ 
         antialias: true,
         preserveDrawingBuffer: true
     });
     threeJsRenderer.setSize(sceneContainer.clientWidth, sceneContainer.clientHeight);
-    threeJsRenderer.shadowMap.enabled = true; // Enable shadows for better visuals
+    threeJsRenderer.shadowMap.enabled = true;
     sceneContainer.appendChild(threeJsRenderer.domElement);
     
-    // Add OrbitControls for better interaction
     threeJsControls = new THREE.OrbitControls(threeJsCamera, threeJsRenderer.domElement);
-    threeJsControls.enableDamping = true; // Add smooth damping effect
+    threeJsControls.enableDamping = true;
     threeJsControls.dampingFactor = 0.05;
-    threeJsControls.minDistance = 3; // Prevent zooming in too close
-    threeJsControls.maxDistance = 50; // Allow zooming out much further
-    threeJsControls.zoomSpeed = 1.5; // Increase zoom speed
-    threeJsControls.rotateSpeed = 1.0; // Standard rotation speed
-    threeJsControls.panSpeed = 1.0; // Standard panning speed
-    threeJsControls.enablePan = true; // Enable panning
-    threeJsControls.enableRotate = true; // Enable rotation
-    threeJsControls.enableZoom = true; // Enable zoom
+    threeJsControls.minDistance = 3;
+    threeJsControls.maxDistance = 50;
+    threeJsControls.zoomSpeed = 1.5;
+    threeJsControls.rotateSpeed = 1.0;
+    threeJsControls.panSpeed = 1.0;
+    threeJsControls.enablePan = true;
+    threeJsControls.enableRotate = true;
+    threeJsControls.enableZoom = true;
     
-    // Add Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
     threeJsScene.add(ambientLight);
     
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
     directionalLight.position.set(1, 1, 1);
-    directionalLight.castShadow = true; // Enable shadows
+    directionalLight.castShadow = true;
     directionalLight.shadow.mapSize.width = 2048;
     directionalLight.shadow.mapSize.height = 2048;
     threeJsScene.add(directionalLight);
     
-    // Load 3D scene model first
-    loadSceneModel().then(() => {
-        // Create Elephant model after scene is loaded
-        createElephantModel();
-    });
-    
-    // Start animation loop immediately
+    createElephantModel();
     animate();
     
-    // Force an initial render after a short delay to ensure everything is loaded
     setTimeout(() => {
         if (threeJsRenderer && threeJsScene && threeJsCamera) {
             console.log("Forcing initial render");
@@ -861,39 +565,33 @@ function setupThreeJs() {
         }
     }, 100);
     
-    // Force another render after a longer delay to catch slower model loading
     setTimeout(() => {
         if (threeJsRenderer && threeJsScene && threeJsCamera) {
             console.log("Forcing secondary render");
-            onWindowResize(); // Force a resize to update everything
+            onWindowResize();
             threeJsControls.update();
             threeJsRenderer.render(threeJsScene, threeJsCamera);
         }
     }, 1000);
     
-    // Handle window resize
     window.addEventListener('resize', onWindowResize);
 }
 
 function createElephantModel() {
-    // Check if GLTFLoader is available
     if (!THREE.GLTFLoader) {
         console.error('THREE.GLTFLoader is not available');
         showModelLoadError('THREE.GLTFLoader is not available. Please check your Three.js imports.');
         return;
     }
     
-    // Load your existing elephant model
     const loader = new THREE.GLTFLoader();
     
-    // Create material using the captured image as texture
     const material = new THREE.MeshStandardMaterial({ 
         map: elephantTexture,
         roughness: 0.7,
         metalness: 0.2
     });
     
-    // Show loading message in the scene container
     const loadingMessage = document.createElement('div');
     loadingMessage.style.position = 'absolute';
     loadingMessage.style.top = '50%';
@@ -905,17 +603,12 @@ function createElephantModel() {
     loadingMessage.innerHTML = translations[currentLanguage].loadingModel || 'Loading 3D model...';
     sceneContainer.appendChild(loadingMessage);
     
-    // Log model path for debugging
     const modelPath = 'assets/models/elephant/scene.gltf';
     console.log('Attempting to load 3D model from:', modelPath);
     
     loader.load(
-        // Model path - adjust path if your model is elsewhere
         modelPath, 
-        
-        // onLoad callback
         function(gltf) {
-            // Remove loading message
             if (loadingMessage.parentNode) {
                 loadingMessage.parentNode.removeChild(loadingMessage);
             }
@@ -923,42 +616,21 @@ function createElephantModel() {
             console.log('Model loaded successfully');
             elephantModel = gltf.scene;
             
-            // Apply the captured texture to the model
             elephantModel.traverse(function(child) {
                 if (child.isMesh) {
-                    // Apply our material with the captured texture
                     child.material = material;
-                    
-                    // Enable shadows
                     child.castShadow = true;
                     child.receiveShadow = true;
                 }
             });
             
-            // Position and scale model as needed
-            // If we have a scene model, position the elephant relative to it
-            if (sceneModel) {
-                // Position the elephant on top of the scene
-                // These values might need adjustment based on your specific scene model
-                elephantModel.scale.set(0.08, 0.08, 0.08); // Smaller scale to fit scene
-                elephantModel.position.set(0, 0, 0); // Center position, height will depend on scene
-                
-                // Find the optimal Y position by checking the scene's bounding box
-                const sceneBoundingBox = new THREE.Box3().setFromObject(sceneModel);
-                const sceneHeight = sceneBoundingBox.max.y;
-                elephantModel.position.y = sceneHeight + 0.1; // Position slightly above scene
-            } else {
-                // Default positioning if no scene model
-                elephantModel.scale.set(0.1, 0.1, 0.1);
-                elephantModel.position.set(0, -1.5, 0);
-            }
+            elephantModel.scale.set(modelConfig.scale, modelConfig.scale, modelConfig.scale);
+            elephantModel.position.set(modelConfig.positionX, modelConfig.positionY, modelConfig.positionZ);
+            elephantModel.rotation.y = modelConfig.rotationY;
             
-            // Add model to scene
             threeJsScene.add(elephantModel);
             modelLoaded = true;
         },
-        
-        // onProgress callback
         function(xhr) {
             if (xhr.lengthComputable) {
                 const percentComplete = xhr.loaded / xhr.total * 100;
@@ -966,10 +638,7 @@ function createElephantModel() {
                 loadingMessage.innerHTML = translations[currentLanguage].loadingModel + ' ' + percentComplete.toFixed(0) + '%';
             }
         },
-        
-        // onError callback
         function(error) {
-            // Remove loading message
             if (loadingMessage.parentNode) {
                 loadingMessage.parentNode.removeChild(loadingMessage);
             }
@@ -982,7 +651,6 @@ function createElephantModel() {
 
 // Function to display model loading error
 function showModelLoadError(errorMessage) {
-    // Create error message element
     const errorElement = document.createElement('div');
     errorElement.style.position = 'absolute';
     errorElement.style.top = '50%';
@@ -995,7 +663,6 @@ function showModelLoadError(errorMessage) {
     errorElement.style.maxWidth = '80%';
     errorElement.style.textAlign = 'center';
     
-    // Add error content
     errorElement.innerHTML = `
         <h3 style="margin-top:0">${translations[currentLanguage].modelLoadError}</h3>
         <p>${errorMessage}</p>
@@ -1004,15 +671,13 @@ function showModelLoadError(errorMessage) {
         <button id="error-close-btn" style="padding:8px 16px;background:#fff;color:#333;border:none;border-radius:4px;cursor:pointer;margin-top:10px;">${translations[currentLanguage].closeBtn}</button>
     `;
     
-    // Add to scene container
     sceneContainer.appendChild(errorElement);
     
-    // Add event listener to close button
     document.getElementById('error-close-btn').addEventListener('click', function() {
         if (errorElement.parentNode) {
             errorElement.parentNode.removeChild(errorElement);
         }
-        restart(); // Go back to the intro screen
+        restart();
     });
 }
 
@@ -1021,17 +686,14 @@ function animate() {
     
     requestAnimationFrame(animate);
     
-    // Auto-rotate if enabled in model config
     if (modelConfig.autoRotate && elephantModel) {
         elephantModel.rotation.y += modelConfig.rotationSpeed;
     }
     
-    // Update orbit controls
     if (threeJsControls) {
         threeJsControls.update();
     }
     
-    // Render scene
     threeJsRenderer.render(threeJsScene, threeJsCamera);
 }
 
@@ -1040,14 +702,11 @@ function onWindowResize() {
     
     console.log("Window resize triggered");
     
-    // Update camera aspect ratio
     threeJsCamera.aspect = sceneContainer.clientWidth / sceneContainer.clientHeight;
     threeJsCamera.updateProjectionMatrix();
     
-    // Update renderer size
     threeJsRenderer.setSize(sceneContainer.clientWidth, sceneContainer.clientHeight);
     
-    // Force a render
     if (threeJsRenderer && threeJsScene && threeJsCamera) {
         threeJsRenderer.render(threeJsScene, threeJsCamera);
     }
@@ -1068,7 +727,6 @@ function stopThreeJs() {
     threeJsCamera = null;
     elephantModel = null;
     elephantTexture = null;
-    sceneModel = null;
     modelLoaded = false;
     
     window.removeEventListener('resize', onWindowResize);
@@ -1077,10 +735,8 @@ function stopThreeJs() {
 function saveImage() {
     if (!threeJsRenderer) return;
     
-    // Capture the current canvas as an image
     const imageData = threeJsRenderer.domElement.toDataURL('image/png');
     
-    // Create a link to download the image
     const link = document.createElement('a');
     link.href = imageData;
     link.download = 'my-elephant.png';
@@ -1089,12 +745,10 @@ function saveImage() {
 
 // Initialize language
 document.addEventListener('DOMContentLoaded', function() {
-    // Check if there's a saved language preference
     const savedLanguage = localStorage.getItem('preferredLanguage');
     if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'nl')) {
         setLanguage(savedLanguage);
     } else {
-        // Default to browser language if available, otherwise English
         const browserLang = navigator.language || navigator.userLanguage;
         if (browserLang && browserLang.startsWith('nl')) {
             setLanguage('nl');
