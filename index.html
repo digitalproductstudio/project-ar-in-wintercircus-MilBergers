@@ -46,6 +46,16 @@
         </div>
 
         <div id="camera-screen" class="screen">
+            <div class="camera-instructions">
+                <div class="phone-rotation-icon">
+                    <svg width="32" height="20" viewBox="0 0 32 20" fill="#E73C3E" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="2" y="2" width="28" height="16" rx="3" ry="3" stroke="#E73C3E" stroke-width="2" fill="none"/>
+                        <circle cx="5" cy="10" r="1" fill="#E73C3E"/>
+                        <rect x="8" y="6" width="16" height="8" rx="1" fill="rgba(231, 60, 62, 0.2)"/>
+                    </svg>
+                </div>
+                <p data-i18n="cameraInstructions">Hold your phone horizontally and capture your colored elephant drawing</p>
+            </div>
             <div class="camera-container">
                 <video id="camera-feed" autoplay playsinline></video>
                 <canvas id="camera-canvas"></canvas>
@@ -74,7 +84,7 @@
             <div id="ar-container">
                 <a-scene 
                     id="ar-scene"
-                    mindar-image="imageTargetSrc: assets/targets/elephant-template.mind; showStats: false; uiLoading: no; uiScanning: no; uiError: no;"
+                    mindar-image="imageTargetSrc: assets/targets/elephant-template.mind; showStats: false; uiLoading: no; uiScanning: no; uiError: no; filterMinCF: 0.0005; filterBeta: 1500; warmupTolerance: 3; missTolerance: 3;"
                     color-space="sRGB" 
                     renderer="colorManagement: true, physicallyCorrectLights" 
                     vr-mode-ui="enabled: false" 
@@ -92,9 +102,8 @@
                             id="elephant-model"
                             src="#elephantModel"
                             position="0 0 0" 
-                            scale="0.15 0.15 0.15" 
-                            rotation="0 0 0"
-                            animation="property: rotation; to: 0 360 0; dur: 8000; easing: linear; loop: true">
+                            scale="0.02 0.02 0.02" 
+                            rotation="90 0 0">
                         </a-gltf-model>
                     </a-entity>
                 </a-scene>
@@ -102,7 +111,7 @@
             
             <div class="ar-ui-overlay">
                 <div class="ar-instructions">
-                    <p id="ar-instruction-text" data-i18n="arInstructions">Point your camera at the colored elephant template</p>
+                    <p id="ar-instruction-text" data-i18n="arInstructions">Hold your phone horizontally and point camera at the AR marker</p>
                 </div>
                 <div class="button-container">
                     <button id="restart-btn" class="primary-btn" data-i18n="restartBtn">Scan Another</button>

@@ -22,10 +22,11 @@ const translations = {
         permissionText2: "When prompted, please tap \"Allow\" to continue.",
         grantPermissionBtn: "Grant Camera Access",
         permissionDenied: "Camera access was denied. Please grant camera permission to use this feature.",
-        arInstructions: "Point your camera at the colored elephant template",
+        arInstructions: "Hold your phone horizontally and point camera at the AR marker",
         arDetected: "Template detected! Your elephant is alive!",
         arLost: "Template lost. Point camera at the colored template again.",
-        captureArBtn: "Capture AR"
+        captureArBtn: "Capture AR",
+        cameraInstructions: "Hold your phone horizontally and capture your colored elephant drawing"
     },
     nl: {
         title: "TEMBO TEKENING AR ERVARING",
@@ -49,7 +50,7 @@ const translations = {
         permissionText2: "Wanneer gevraagd, tik op \"Toestaan\" om door te gaan.",
         grantPermissionBtn: "Geef Camera Toegang",
         permissionDenied: "Camera toegang is geweigerd. Geef alstublieft toestemming voor de camera om deze functie te gebruiken.",
-        arInstructions: "Richt je camera op de gekleurde olifant sjabloon",
+        arInstructions: "Richt je camera op de AR marker en houd je telefoon horizontaal",
         arDetected: "Sjabloon gedetecteerd! Je olifant is tot leven gekomen!",
         arLost: "Sjabloon verloren. Richt camera opnieuw op de gekleurde sjabloon.",
         captureArBtn: "AR Vastleggen"
@@ -229,10 +230,33 @@ function goToCameraScreen() {
     }
 }
 
+
 function goToARScreen() {
     stopCamera();
     showScreen(arScreen);
-    initializeAR();
+    
+    // Force A-Frame to recalculate canvas size after screen transition
+    setTimeout(() => {
+        initializeAR();
+        
+        // Trigger resize event to force A-Frame canvas to update
+        window.dispatchEvent(new Event('resize'));
+        
+        // Additional fallback: directly call A-Frame's resize if available
+        if (arScene && arScene.resize) {
+            arScene.resize();
+        }
+        
+        // Alternative approach: force canvas size update
+        const canvas = arScene?.canvas;
+        if (canvas) {
+            const rect = arScene.getBoundingClientRect();
+            canvas.style.width = rect.width + 'px';
+            canvas.style.height = rect.height + 'px';
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+        }
+    }, 100); // Small delay to ensure DOM is updated
 }
 
 function restart() {
@@ -520,6 +544,10 @@ function downloadTemplate() {
 function initializeAR() {
     if (arInitialized) {
         console.log('AR already initialized');
+        // Even if initialized, force a resize to ensure proper display
+        setTimeout(() => {
+            window.dispatchEvent(new Event('resize'));
+        }, 50);
         return;
     }
     
@@ -531,11 +559,46 @@ function initializeAR() {
         return;
     }
     
+    // Ensure the scene is visible and has dimensions
+    const forceSceneUpdate = () => {
+        // Force the scene to be visible
+        arScene.style.display = 'block';
+        arScene.style.width = '100%';
+        arScene.style.height = '100%';
+        
+        // Trigger resize events
+        window.dispatchEvent(new Event('resize'));
+        
+        // Force A-Frame to recalculate if method exists
+        if (arScene.resize) {
+            arScene.resize();
+        }
+        
+        // Update canvas dimensions
+        const canvas = arScene.canvas;
+        if (canvas) {
+            const container = arScene.parentElement;
+            if (container) {
+                const rect = container.getBoundingClientRect();
+                canvas.style.width = rect.width + 'px';
+                canvas.style.height = rect.height + 'px';
+                
+                // Set actual canvas size for proper rendering
+                const dpr = window.devicePixelRatio || 1;
+                canvas.width = rect.width * dpr;
+                canvas.height = rect.height * dpr;
+            }
+        }
+    };
+    
     // Wait for A-Frame to be ready
     arScene.addEventListener('loaded', function() {
         console.log('A-Frame scene loaded');
         setupAREventListeners();
         applyTextureToModel();
+        
+        // Force update after loading
+        setTimeout(forceSceneUpdate, 100);
     });
     
     // If already loaded
@@ -543,6 +606,12 @@ function initializeAR() {
         console.log('A-Frame scene already loaded');
         setupAREventListeners();
         applyTextureToModel();
+        
+        // Force update immediately
+        setTimeout(forceSceneUpdate, 50);
+    } else {
+        // Force update even if not loaded yet
+        setTimeout(forceSceneUpdate, 100);
     }
     
     arInitialized = true;
