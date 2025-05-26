@@ -1,8 +1,8 @@
 // Language translations
 const translations = {
     en: {
-        title: "TEMBO DRAWING 3D EXPERIENCE",
-        description: "Color the elephant template, then scan it to see your drawing come to life as a 3D elephant!",
+        title: "TEMBO DRAWING AR EXPERIENCE",
+        description: "Color the elephant template, then scan it to see your drawing come to life as an AR elephant!",
         startBtn: "Start Experience",
         templateBtn: "Download Template",
         captureBtn: "Capture",
@@ -11,21 +11,25 @@ const translations = {
         processingText: "Processing your elephant...",
         restartBtn: "Scan Another",
         saveBtn: "Save Image",
-        loadingModel: "Loading 3D model...",
-        errorLoadingModel: "Failed to load 3D model: ",
-        modelLoadError: "Model Loading Error",
+        loadingModel: "Loading AR model...",
+        errorLoadingModel: "Failed to load AR model: ",
+        modelLoadError: "AR Model Loading Error",
         modelLoadErrorMsg: "Please check your model path and file format.",
-        expectedPath: "Expected path: assets/models/elephant.gltf",
+        expectedPath: "Expected path: assets/models/elephant/scene.gltf",
         closeBtn: "Close",
         permissionTitle: "Camera Access Required",
         permissionText1: "To scan your drawing, we need access to your camera.",
         permissionText2: "When prompted, please tap \"Allow\" to continue.",
         grantPermissionBtn: "Grant Camera Access",
-        permissionDenied: "Camera access was denied. Please grant camera permission to use this feature."
+        permissionDenied: "Camera access was denied. Please grant camera permission to use this feature.",
+        arInstructions: "Point your camera at the colored elephant template",
+        arDetected: "Template detected! Your elephant is alive!",
+        arLost: "Template lost. Point camera at the colored template again.",
+        captureArBtn: "Capture AR"
     },
     nl: {
-        title: "TEMBO TEKENING 3D ERVARING",
-        description: "Kleur de olifant sjabloon, scan het dan om je tekening tot leven te zien komen als een 3D olifant!",
+        title: "TEMBO TEKENING AR ERVARING",
+        description: "Kleur de olifant sjabloon, scan het dan om je tekening tot leven te zien komen als een AR olifant!",
         startBtn: "Start Ervaring",
         templateBtn: "Sjabloon Downloaden",
         captureBtn: "Vastleggen",
@@ -34,17 +38,21 @@ const translations = {
         processingText: "Je olifant verwerken...",
         restartBtn: "Nog Een Scannen",
         saveBtn: "Afbeelding Opslaan",
-        loadingModel: "3D model laden...",
-        errorLoadingModel: "Kan 3D-model niet laden: ",
-        modelLoadError: "Fout bij laden model",
+        loadingModel: "AR model laden...",
+        errorLoadingModel: "Kan AR-model niet laden: ",
+        modelLoadError: "Fout bij laden AR model",
         modelLoadErrorMsg: "Controleer je modelpad en bestandsformaat.",
-        expectedPath: "Verwacht pad: assets/models/elephant.gltf",
+        expectedPath: "Verwacht pad: assets/models/elephant/scene.gltf",
         closeBtn: "Sluiten",
         permissionTitle: "Camera Toegang Vereist",
         permissionText1: "Om je tekening te scannen, hebben we toegang tot je camera nodig.",
         permissionText2: "Wanneer gevraagd, tik op \"Toestaan\" om door te gaan.",
         grantPermissionBtn: "Geef Camera Toegang",
-        permissionDenied: "Camera toegang is geweigerd. Geef alstublieft toestemming voor de camera om deze functie te gebruiken."
+        permissionDenied: "Camera toegang is geweigerd. Geef alstublieft toestemming voor de camera om deze functie te gebruiken.",
+        arInstructions: "Richt je camera op de gekleurde olifant sjabloon",
+        arDetected: "Sjabloon gedetecteerd! Je olifant is tot leven gekomen!",
+        arLost: "Sjabloon verloren. Richt camera opnieuw op de gekleurde sjabloon.",
+        captureArBtn: "AR Vastleggen"
     }
 };
 
@@ -72,8 +80,12 @@ function setLanguage(lang) {
         }
     });
     
-    // Store the selected language in localStorage
-    localStorage.setItem('preferredLanguage', lang);
+    // Store the selected language
+    try {
+        localStorage.setItem('preferredLanguage', lang);
+    } catch (e) {
+        console.log('Could not save language preference');
+    }
 }
 
 // DOM Elements
@@ -81,56 +93,33 @@ const introScreen = document.getElementById('intro-screen');
 const permissionScreen = document.getElementById('permission-screen');
 const cameraScreen = document.getElementById('camera-screen');
 const processingScreen = document.getElementById('processing-screen');
-const resultScreen = document.getElementById('result-screen');
+const arScreen = document.getElementById('ar-screen');
 
 const startBtn = document.getElementById('start-btn');
 const templateBtn = document.getElementById('template-btn');
 const captureBtn = document.getElementById('capture-btn');
 const backToIntroBtn = document.getElementById('back-to-intro-btn');
 const restartBtn = document.getElementById('restart-btn');
-const saveBtn = document.getElementById('save-btn');
 const switchCameraBtn = document.getElementById('switch-camera-btn');
 const grantPermissionBtn = document.getElementById('grant-permission-btn');
 const backFromPermissionBtn = document.getElementById('back-from-permission-btn');
+const captureArBtn = document.getElementById('capture-ar-btn');
+const backToCameraBtn = document.getElementById('back-to-camera-btn');
 
 const cameraFeed = document.getElementById('camera-feed');
 const cameraCanvas = document.getElementById('camera-canvas');
-const sceneContainer = document.getElementById('scene-container');
-
-// Remove unused control buttons from the DOM
-const rotateLeftBtn = document.getElementById('rotate-left-btn');
-const rotateRightBtn = document.getElementById('rotate-right-btn');
-const zoomInBtn = document.getElementById('zoom-in-btn');
-const zoomOutBtn = document.getElementById('zoom-out-btn');
-if (rotateLeftBtn) rotateLeftBtn.remove();
-if (rotateRightBtn) rotateRightBtn.remove();
-if (zoomInBtn) zoomInBtn.remove();
-if (zoomOutBtn) zoomOutBtn.remove();
+const arInstructionText = document.getElementById('ar-instruction-text');
 
 // App State
 let cameraStream = null;
 let capturedImage = null;
-let threeJsScene = null;
-let threeJsRenderer = null;
-let threeJsCamera = null;
-let threeJsControls = null;
+let arScene = null;
 let elephantModel = null;
-let elephantTexture = null;
-let modelLoaded = false;
 let availableCameras = [];
 let currentCameraIndex = 0;
 let isUsingBackCamera = true;
-
-// Elephant model configuration
-const modelConfig = {
-    scale: 0.15,
-    positionX: 0,
-    positionY: -5,
-    positionZ: 0,
-    rotationY: 0,
-    autoRotate: true,
-    rotationSpeed: 0.0025
-};
+let arInitialized = false;
+let targetDetected = false;
 
 // Helper function to detect if we're on a mobile device
 function isMobileDevice() {
@@ -177,11 +166,6 @@ async function refreshCameraList() {
         
         if (newCameras.length > 0) {
             availableCameras = newCameras;
-            
-            if (availableCameras.length > 1) {
-                console.log('Multiple cameras detected:', availableCameras.length);
-            }
-            
             updateSwitchCameraButtonVisibility();
         }
     } catch (error) {
@@ -195,7 +179,6 @@ templateBtn.addEventListener('click', downloadTemplate);
 captureBtn.addEventListener('click', captureImage);
 backToIntroBtn.addEventListener('click', goToIntroScreen);
 restartBtn.addEventListener('click', restart);
-saveBtn.addEventListener('click', saveImage);
 if (switchCameraBtn) {
     switchCameraBtn.addEventListener('click', switchCamera);
 }
@@ -204,6 +187,12 @@ if (grantPermissionBtn) {
 }
 if (backFromPermissionBtn) {
     backFromPermissionBtn.addEventListener('click', goToIntroScreen);
+}
+if (captureArBtn) {
+    captureArBtn.addEventListener('click', captureARScreenshot);
+}
+if (backToCameraBtn) {
+    backToCameraBtn.addEventListener('click', goToCameraScreen);
 }
 
 // Language button event listeners
@@ -223,6 +212,7 @@ function showScreen(screen) {
 
 function goToIntroScreen() {
     stopCamera();
+    stopAR();
     showScreen(introScreen);
 }
 
@@ -230,8 +220,24 @@ function goToPermissionScreen() {
     showScreen(permissionScreen);
 }
 
+function goToCameraScreen() {
+    stopAR();
+    showScreen(cameraScreen);
+    // Restart camera if needed
+    if (!cameraStream) {
+        initializeCamera();
+    }
+}
+
+function goToARScreen() {
+    stopCamera();
+    showScreen(arScreen);
+    initializeAR();
+}
+
 function restart() {
-    stopThreeJs();
+    stopCamera();
+    stopAR();
     showScreen(introScreen);
 }
 
@@ -482,22 +488,24 @@ function captureImage() {
     }, 1500);
 }
 
-// Image Processing
+// Image Processing for AR
 function processImage() {
-    const textureLoader = new THREE.TextureLoader();
-    elephantTexture = textureLoader.load(
-        capturedImage, 
-        function() {
-            setupThreeJs();
-            showScreen(resultScreen);
-        },
-        undefined,
-        function(error) {
-            console.error('Error loading texture:', error);
-            alert('Failed to process your image. Please try again.');
-            showScreen(cameraScreen);
-        }
-    );
+    console.log('Processing captured image for AR texture');
+    
+    // Set the captured texture source
+    const textureImg = document.getElementById('capturedTexture');
+    textureImg.src = capturedImage;
+    
+    textureImg.onload = () => {
+        console.log('Captured texture loaded successfully');
+        goToARScreen();
+    };
+    
+    textureImg.onerror = (error) => {
+        console.error('Error loading captured texture:', error);
+        alert('Failed to process your image. Please try again.');
+        showScreen(cameraScreen);
+    };
 }
 
 // Template Functions
@@ -508,244 +516,169 @@ function downloadTemplate() {
     link.click();
 }
 
-// Three.js Setup
-function setupThreeJs() {
-    console.log("Setting up Three.js scene");
-    
-    threeJsScene = new THREE.Scene();
-    threeJsScene.background = new THREE.Color(0x87CEEB);
-    
-    threeJsCamera = new THREE.PerspectiveCamera(
-        75, 
-        sceneContainer.clientWidth / sceneContainer.clientHeight, 
-        0.1, 
-        1000
-    );
-    threeJsCamera.position.z = 15;
-    threeJsCamera.position.y = 5;
-    
-    threeJsRenderer = new THREE.WebGLRenderer({ 
-        antialias: true,
-        preserveDrawingBuffer: true
-    });
-    threeJsRenderer.setSize(sceneContainer.clientWidth, sceneContainer.clientHeight);
-    threeJsRenderer.shadowMap.enabled = true;
-    sceneContainer.appendChild(threeJsRenderer.domElement);
-    
-    threeJsControls = new THREE.OrbitControls(threeJsCamera, threeJsRenderer.domElement);
-    threeJsControls.enableDamping = true;
-    threeJsControls.dampingFactor = 0.05;
-    threeJsControls.minDistance = 3;
-    threeJsControls.maxDistance = 50;
-    threeJsControls.zoomSpeed = 1.5;
-    threeJsControls.rotateSpeed = 1.0;
-    threeJsControls.panSpeed = 1.0;
-    threeJsControls.enablePan = true;
-    threeJsControls.enableRotate = true;
-    threeJsControls.enableZoom = true;
-    
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-    threeJsScene.add(ambientLight);
-    
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(1, 1, 1);
-    directionalLight.castShadow = true;
-    directionalLight.shadow.mapSize.width = 2048;
-    directionalLight.shadow.mapSize.height = 2048;
-    threeJsScene.add(directionalLight);
-    
-    createElephantModel();
-    animate();
-    
-    setTimeout(() => {
-        if (threeJsRenderer && threeJsScene && threeJsCamera) {
-            console.log("Forcing initial render");
-            threeJsControls.update();
-            threeJsRenderer.render(threeJsScene, threeJsCamera);
-        }
-    }, 100);
-    
-    setTimeout(() => {
-        if (threeJsRenderer && threeJsScene && threeJsCamera) {
-            console.log("Forcing secondary render");
-            onWindowResize();
-            threeJsControls.update();
-            threeJsRenderer.render(threeJsScene, threeJsCamera);
-        }
-    }, 1000);
-    
-    window.addEventListener('resize', onWindowResize);
-}
-
-function createElephantModel() {
-    if (!THREE.GLTFLoader) {
-        console.error('THREE.GLTFLoader is not available');
-        showModelLoadError('THREE.GLTFLoader is not available. Please check your Three.js imports.');
+// AR Functions
+function initializeAR() {
+    if (arInitialized) {
+        console.log('AR already initialized');
         return;
     }
     
-    const loader = new THREE.GLTFLoader();
+    console.log('Initializing AR scene');
+    arScene = document.getElementById('ar-scene');
     
-    const material = new THREE.MeshStandardMaterial({ 
-        map: elephantTexture,
-        roughness: 0.7,
-        metalness: 0.2
+    if (!arScene) {
+        console.error('AR scene not found');
+        return;
+    }
+    
+    // Wait for A-Frame to be ready
+    arScene.addEventListener('loaded', function() {
+        console.log('A-Frame scene loaded');
+        setupAREventListeners();
+        applyTextureToModel();
     });
     
-    const loadingMessage = document.createElement('div');
-    loadingMessage.style.position = 'absolute';
-    loadingMessage.style.top = '50%';
-    loadingMessage.style.left = '50%';
-    loadingMessage.style.transform = 'translate(-50%, -50%)';
-    loadingMessage.style.color = 'white';
-    loadingMessage.style.fontSize = '18px';
-    loadingMessage.style.textAlign = 'center';
-    loadingMessage.innerHTML = translations[currentLanguage].loadingModel || 'Loading 3D model...';
-    sceneContainer.appendChild(loadingMessage);
+    // If already loaded
+    if (arScene.hasLoaded) {
+        console.log('A-Frame scene already loaded');
+        setupAREventListeners();
+        applyTextureToModel();
+    }
     
-    const modelPath = 'assets/models/elephant/scene.gltf';
-    console.log('Attempting to load 3D model from:', modelPath);
+    arInitialized = true;
+}
+
+function setupAREventListeners() {
+    const arSystem = arScene.systems['mindar-image-system'];
     
-    loader.load(
-        modelPath, 
-        function(gltf) {
-            if (loadingMessage.parentNode) {
-                loadingMessage.parentNode.removeChild(loadingMessage);
-            }
-            
-            console.log('Model loaded successfully');
-            elephantModel = gltf.scene;
-            
-            elephantModel.traverse(function(child) {
-                if (child.isMesh) {
+    if (arSystem) {
+        // Target found
+        arSystem.el.addEventListener('targetFound', () => {
+            console.log('AR target found');
+            targetDetected = true;
+            updateARInstructions(translations[currentLanguage].arDetected);
+        });
+        
+        // Target lost
+        arSystem.el.addEventListener('targetLost', () => {
+            console.log('AR target lost');
+            targetDetected = false;
+            updateARInstructions(translations[currentLanguage].arLost);
+        });
+    }
+    
+    // Model loaded event
+    const elephantModelEl = document.getElementById('elephant-model');
+    if (elephantModelEl) {
+        elephantModelEl.addEventListener('model-loaded', () => {
+            console.log('Elephant model loaded in AR scene');
+            applyTextureToModel();
+        });
+    }
+}
+
+function applyTextureToModel() {
+    const elephantModelEl = document.getElementById('elephant-model');
+    const textureImg = document.getElementById('capturedTexture');
+    
+    if (!elephantModelEl || !textureImg || !textureImg.src) {
+        console.log('Model or texture not ready yet');
+        return;
+    }
+    
+    console.log('Applying captured texture to AR model');
+    
+    // Wait for model to be fully loaded
+    elephantModelEl.addEventListener('model-loaded', () => {
+        const model = elephantModelEl.getObject3D('mesh');
+        if (model) {
+            model.traverse((child) => {
+                if (child.isMesh && child.material) {
+                    // Create new material with captured texture
+                    const texture = new THREE.TextureLoader().load(textureImg.src);
+                    const material = new THREE.MeshStandardMaterial({
+                        map: texture,
+                        roughness: 0.7,
+                        metalness: 0.2
+                    });
                     child.material = material;
-                    child.castShadow = true;
-                    child.receiveShadow = true;
+                    console.log('Applied texture to mesh:', child.name);
                 }
             });
-            
-            elephantModel.scale.set(modelConfig.scale, modelConfig.scale, modelConfig.scale);
-            elephantModel.position.set(modelConfig.positionX, modelConfig.positionY, modelConfig.positionZ);
-            elephantModel.rotation.y = modelConfig.rotationY;
-            
-            threeJsScene.add(elephantModel);
-            modelLoaded = true;
-        },
-        function(xhr) {
-            if (xhr.lengthComputable) {
-                const percentComplete = xhr.loaded / xhr.total * 100;
-                console.log(percentComplete.toFixed(2) + '% loaded');
-                loadingMessage.innerHTML = translations[currentLanguage].loadingModel + ' ' + percentComplete.toFixed(0) + '%';
-            }
-        },
-        function(error) {
-            if (loadingMessage.parentNode) {
-                loadingMessage.parentNode.removeChild(loadingMessage);
-            }
-            
-            console.error('Error loading the model:', error);
-            showModelLoadError(translations[currentLanguage].errorLoadingModel + error.message);
         }
-    );
-}
-
-// Function to display model loading error
-function showModelLoadError(errorMessage) {
-    const errorElement = document.createElement('div');
-    errorElement.style.position = 'absolute';
-    errorElement.style.top = '50%';
-    errorElement.style.left = '50%';
-    errorElement.style.transform = 'translate(-50%, -50%)';
-    errorElement.style.color = 'white';
-    errorElement.style.background = 'rgba(255, 0, 0, 0.7)';
-    errorElement.style.padding = '20px';
-    errorElement.style.borderRadius = '10px';
-    errorElement.style.maxWidth = '80%';
-    errorElement.style.textAlign = 'center';
-    
-    errorElement.innerHTML = `
-        <h3 style="margin-top:0">${translations[currentLanguage].modelLoadError}</h3>
-        <p>${errorMessage}</p>
-        <p>${translations[currentLanguage].modelLoadErrorMsg}</p>
-        <p>${translations[currentLanguage].expectedPath}</p>
-        <button id="error-close-btn" style="padding:8px 16px;background:#fff;color:#333;border:none;border-radius:4px;cursor:pointer;margin-top:10px;">${translations[currentLanguage].closeBtn}</button>
-    `;
-    
-    sceneContainer.appendChild(errorElement);
-    
-    document.getElementById('error-close-btn').addEventListener('click', function() {
-        if (errorElement.parentNode) {
-            errorElement.parentNode.removeChild(errorElement);
-        }
-        restart();
     });
-}
-
-function animate() {
-    if (!threeJsRenderer) return;
     
-    requestAnimationFrame(animate);
-    
-    if (modelConfig.autoRotate && elephantModel) {
-        elephantModel.rotation.y += modelConfig.rotationSpeed;
-    }
-    
-    if (threeJsControls) {
-        threeJsControls.update();
-    }
-    
-    threeJsRenderer.render(threeJsScene, threeJsCamera);
-}
-
-function onWindowResize() {
-    if (!threeJsCamera || !threeJsRenderer) return;
-    
-    console.log("Window resize triggered");
-    
-    threeJsCamera.aspect = sceneContainer.clientWidth / sceneContainer.clientHeight;
-    threeJsCamera.updateProjectionMatrix();
-    
-    threeJsRenderer.setSize(sceneContainer.clientWidth, sceneContainer.clientHeight);
-    
-    if (threeJsRenderer && threeJsScene && threeJsCamera) {
-        threeJsRenderer.render(threeJsScene, threeJsCamera);
+    // If model is already loaded
+    const model = elephantModelEl.getObject3D('mesh');
+    if (model) {
+        model.traverse((child) => {
+            if (child.isMesh && child.material) {
+                const texture = new THREE.TextureLoader().load(textureImg.src);
+                const material = new THREE.MeshStandardMaterial({
+                    map: texture,
+                    roughness: 0.7,
+                    metalness: 0.2
+                });
+                child.material = material;
+                console.log('Applied texture to mesh:', child.name);
+            }
+        });
     }
 }
 
-function stopThreeJs() {
-    if (threeJsRenderer) {
-        sceneContainer.removeChild(threeJsRenderer.domElement);
-        threeJsRenderer = null;
+function updateARInstructions(text) {
+    if (arInstructionText) {
+        arInstructionText.textContent = text;
     }
-    
-    if (threeJsControls) {
-        threeJsControls.dispose();
-        threeJsControls = null;
-    }
-    
-    threeJsScene = null;
-    threeJsCamera = null;
-    elephantModel = null;
-    elephantTexture = null;
-    modelLoaded = false;
-    
-    window.removeEventListener('resize', onWindowResize);
 }
 
-function saveImage() {
-    if (!threeJsRenderer) return;
+function stopAR() {
+    if (arScene && arInitialized) {
+        console.log('Stopping AR scene');
+        // Reset AR state
+        targetDetected = false;
+        arInitialized = false;
+        
+        // Reset instruction text
+        updateARInstructions(translations[currentLanguage].arInstructions);
+    }
+}
+
+function captureARScreenshot() {
+    if (!arScene) {
+        console.error('AR scene not available for screenshot');
+        return;
+    }
     
-    const imageData = threeJsRenderer.domElement.toDataURL('image/png');
-    
-    const link = document.createElement('a');
-    link.href = imageData;
-    link.download = 'my-elephant.png';
-    link.click();
+    try {
+        const canvas = arScene.canvas;
+        if (canvas) {
+            const imageData = canvas.toDataURL('image/png');
+            
+            const link = document.createElement('a');
+            link.href = imageData;
+            link.download = 'my-ar-elephant.png';
+            link.click();
+            
+            console.log('AR screenshot captured');
+        } else {
+            console.error('Canvas not found in AR scene');
+        }
+    } catch (error) {
+        console.error('Error capturing AR screenshot:', error);
+        alert('Failed to capture screenshot. Please try again.');
+    }
 }
 
 // Initialize language
 document.addEventListener('DOMContentLoaded', function() {
-    const savedLanguage = localStorage.getItem('preferredLanguage');
+    let savedLanguage = null;
+    try {
+        savedLanguage = localStorage.getItem('preferredLanguage');
+    } catch (e) {
+        console.log('Could not access localStorage');
+    }
+    
     if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'nl')) {
         setLanguage(savedLanguage);
     } else {

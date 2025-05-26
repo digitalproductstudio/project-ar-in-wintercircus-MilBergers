@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Elephant Drawing 3D Experience</title>
+    <title>Elephant Drawing AR Experience</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.min.js"></script>
+    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     <link href="https://db.onlinewebfonts.com/c/42f9da2abdd3c2f1457f73eb85d2d6f6?family=IntervogueSoftAlt-Bold" rel="stylesheet">
 </head>
 <body>
@@ -22,8 +21,8 @@
                 </button>
             </div>
             
-            <h1 data-i18n="title">Tembo Drawing 3D Experience</h1>
-            <p data-i18n="description">Color the elephant template, then scan it to see your drawing come to life as a 3D elephant!</p>
+            <h1 data-i18n="title">Tembo Drawing AR Experience</h1>
+            <p data-i18n="description">Color the elephant template, then scan it to see your drawing come to life as an AR elephant!</p>
             <div class="button-container">
                 <button id="start-btn" class="primary-btn" data-i18n="startBtn">Start Experience</button>
                 <button id="template-btn" class="secondary-btn" data-i18n="templateBtn">Download Template</button>
@@ -71,11 +70,45 @@
             </div>
         </div>
 
-        <div id="result-screen" class="screen">
-            <div id="scene-container"></div>
-            <div class="button-container">
-                <button id="restart-btn" class="primary-btn" data-i18n="restartBtn">Scan Another</button>
-                <button id="save-btn" class="secondary-btn" data-i18n="saveBtn">Save Image</button>
+        <div id="ar-screen" class="screen">
+            <div id="ar-container">
+                <a-scene 
+                    id="ar-scene"
+                    mindar-image="imageTargetSrc: assets/targets/elephant-template.mind; showStats: false; uiLoading: no; uiScanning: no; uiError: no;"
+                    color-space="sRGB" 
+                    renderer="colorManagement: true, physicallyCorrectLights" 
+                    vr-mode-ui="enabled: false" 
+                    device-orientation-permission-ui="enabled: false">
+                    
+                    <a-assets>
+                        <a-asset-item id="elephantModel" src="assets/models/elephant/scene.gltf"></a-asset-item>
+                        <img id="capturedTexture" crossorigin="anonymous">
+                    </a-assets>
+
+                    <a-camera position="0 0 0" look-controls="enabled: false" cursor="rayOrigin: mouse"></a-camera>
+                    
+                    <a-entity id="elephant-target" mindar-image-target="targetIndex: 0">
+                        <a-gltf-model 
+                            id="elephant-model"
+                            src="#elephantModel"
+                            position="0 0 0" 
+                            scale="0.15 0.15 0.15" 
+                            rotation="0 0 0"
+                            animation="property: rotation; to: 0 360 0; dur: 8000; easing: linear; loop: true">
+                        </a-gltf-model>
+                    </a-entity>
+                </a-scene>
+            </div>
+            
+            <div class="ar-ui-overlay">
+                <div class="ar-instructions">
+                    <p id="ar-instruction-text" data-i18n="arInstructions">Point your camera at the colored elephant template</p>
+                </div>
+                <div class="button-container">
+                    <button id="restart-btn" class="primary-btn" data-i18n="restartBtn">Scan Another</button>
+                    <button id="capture-ar-btn" class="secondary-btn" data-i18n="captureBtn">Capture AR</button>
+                    <button id="back-to-camera-btn" class="secondary-btn" data-i18n="backBtn">Back</button>
+                </div>
             </div>
         </div>
 
