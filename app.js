@@ -53,7 +53,8 @@ const translations = {
         arInstructions: "Richt je camera op de AR marker en houd je telefoon horizontaal",
         arDetected: "Sjabloon gedetecteerd! Je olifant is tot leven gekomen!",
         arLost: "Sjabloon verloren. Richt camera opnieuw op de gekleurde sjabloon.",
-        captureArBtn: "AR Vastleggen"
+        captureArBtn: "AR Vastleggen",
+        cameraInstructions: "Houd je telefoon horizontaal en leg je gekleurde olifanttekening vast"
     }
 };
 
