@@ -84,7 +84,7 @@
             <div id="ar-container">
                 <a-scene 
                     id="ar-scene"
-                    mindar-image="imageTargetSrc: assets/targets/elephant-template.mind; showStats: false; uiLoading: no; uiScanning: no; uiError: no; filterMinCF: 0.0005; filterBeta: 1500; warmupTolerance: 3; missTolerance: 3;"
+                    mindar-image="imageTargetSrc: assets/targets/elephant-template.mind; showStats: false; uiLoading: no; uiScanning: no; uiError: no;"
                     color-space="sRGB" 
                     renderer="colorManagement: true, physicallyCorrectLights" 
                     vr-mode-ui="enabled: false" 
@@ -95,7 +95,12 @@
                         <img id="capturedTexture" crossorigin="anonymous">
                     </a-assets>
 
-                    <a-camera position="0 0 0" look-controls="enabled: true" cursor="rayOrigin: mouse"></a-camera>
+                    <a-camera 
+                        position="0 0 0" 
+                        look-controls="enabled: true; touchEnabled: true; magicWindowTrackingEnabled: false; pointerLockEnabled: false"
+                        wasd-controls="enabled: false"
+                        cursor="rayOrigin: mouse">
+                    </a-camera>
                     
                     <a-entity id="elephant-target" mindar-image-target="targetIndex: 0">
                         <a-gltf-model 
