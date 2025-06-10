@@ -1,7 +1,7 @@
 // Language translations
 const translations = {
     en: {
-        title: "TEMBO DRAWING AR EXPERIENCE V15",
+        title: "TEMBO DRAWING AR EXPERIENCE",
         description: "Color the elephant template, then scan it to see your drawing come to life as an AR elephant!",
         startBtn: "Start Experience",
         templateBtn: "Download Template",
