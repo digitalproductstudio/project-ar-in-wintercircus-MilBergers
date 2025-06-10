@@ -95,7 +95,7 @@
                         <img id="capturedTexture" crossorigin="anonymous">
                     </a-assets>
 
-                    <a-camera position="0 0 0" look-controls="enabled: false" cursor="rayOrigin: mouse"></a-camera>
+                    <a-camera position="0 0 0" look-controls="enabled: true" cursor="rayOrigin: mouse"></a-camera>
                     
                     <a-entity id="elephant-target" mindar-image-target="targetIndex: 0">
                         <a-gltf-model 
@@ -111,7 +111,7 @@
             
             <div class="ar-ui-overlay">
                 <div class="ar-instructions">
-                    <p id="ar-instruction-text" data-i18n="arInstructions">Hold your phone horizontally and point camera at the AR marker</p>
+                    <p id="ar-instruction-text" data-i18n="arInstructions">Hold your phone vertically and point camera at the AR marker</p>
                 </div>
                 <div class="button-container">
                     <button id="restart-btn" class="primary-btn" data-i18n="restartBtn">Scan Another</button>

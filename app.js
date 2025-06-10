@@ -22,11 +22,11 @@ const translations = {
         permissionText2: "When prompted, please tap \"Allow\" to continue.",
         grantPermissionBtn: "Grant Camera Access",
         permissionDenied: "Camera access was denied. Please grant camera permission to use this feature.",
-        arInstructions: "Hold your phone horizontally and point camera at the AR marker",
+        arInstructions: "Hold your phone vertically and point camera at the AR marker",
         arDetected: "Template detected! Your elephant is alive!",
         arLost: "Template lost. Point camera at the colored template again.",
         captureArBtn: "Capture AR",
-        cameraInstructions: "Hold your phone horizontally and capture your colored elephant drawing"
+        cameraInstructions: "Hold your phone vertically and capture your colored elephant drawing"
     },
     nl: {
         title: "TEMBO TEKENING AR ERVARING",
@@ -50,11 +50,11 @@ const translations = {
         permissionText2: "Wanneer gevraagd, tik op \"Toestaan\" om door te gaan.",
         grantPermissionBtn: "Geef Camera Toegang",
         permissionDenied: "Camera toegang is geweigerd. Geef alstublieft toestemming voor de camera om deze functie te gebruiken.",
-        arInstructions: "Richt je camera op de AR marker en houd je telefoon horizontaal",
+        arInstructions: "Richt je camera op de AR marker en houd je telefoon verticaal",
         arDetected: "Sjabloon gedetecteerd! Je olifant is tot leven gekomen!",
         arLost: "Sjabloon verloren. Richt camera opnieuw op de gekleurde sjabloon.",
         captureArBtn: "AR Vastleggen",
-        cameraInstructions: "Houd je telefoon horizontaal en leg je gekleurde olifanttekening vast"
+        cameraInstructions: "Houd je telefoon verticaal en leg je gekleurde olifanttekening vast"
     }
 };
 
