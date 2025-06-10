@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="style.css">
     <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/supermedium/superframe@master/components/orbit-controls/dist/aframe-orbit-controls-component.min.js"></script>
     <link href="https://db.onlinewebfonts.com/c/42f9da2abdd3c2f1457f73eb85d2d6f6?family=IntervogueSoftAlt-Bold" rel="stylesheet">
 </head>
 <body>
@@ -21,7 +22,7 @@
                 </button>
             </div>
             
-            <h1 data-i18n="title">Tembo Drawing AR Experience v13</h1>
+            <h1 data-i18n="title">Tembo Drawing AR Experience v14</h1>
             <p data-i18n="description">Color the elephant template, then scan it to see your drawing come to life as an AR elephant!</p>
             <div class="button-container">
                 <button id="start-btn" class="primary-btn" data-i18n="startBtn">Start Experience</button>
@@ -99,6 +100,7 @@
                         position="0 0 0" 
                         look-controls="enabled: true; touchEnabled: true; magicWindowTrackingEnabled: false; pointerLockEnabled: false"
                         wasd-controls="enabled: false"
+                        orbit-controls="target: 0 0 0; enableDamping: true; dampingFactor: 0.25; enableZoom: true; minDistance: 0.5; maxDistance: 5; enablePan: false; autoRotate: false; enableRotate: true"
                         cursor="rayOrigin: mouse">
                     </a-camera>
                     
