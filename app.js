@@ -236,6 +236,12 @@ function goToARScreen() {
     stopCamera();
     showScreen(arScreen);
     
+    // Hide collaboration logos during AR experience
+    const collaborationLogos = document.querySelector('.collaboration-logos');
+    if (collaborationLogos) {
+        collaborationLogos.style.display = 'none';
+    }
+    
     // Force A-Frame to recalculate canvas size after screen transition
     setTimeout(() => {
         initializeAR();
